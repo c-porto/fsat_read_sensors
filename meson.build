@@ -18,12 +18,13 @@ project('read-sensors', 'cpp',
   language: 'cpp')
 
 sources = files(
-    'src/read-sensors.hpp', 
-    'src/read-sensors.cpp',
+    'src/sensor-manager.hpp', 
+    'src/sensor-manager.cpp',
     'src/log.hpp',
     'src/log.cpp',
     'src/sensor.hpp',
-    'src/sensor.cpp'
+    'src/sensor.cpp',
+    'src/main.cpp',
   )
 
 exe = executable('read_sensors', sources, install : false)

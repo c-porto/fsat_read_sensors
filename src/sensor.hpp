@@ -19,7 +19,7 @@ enum eSensorType : int32_t {
 
 class Sensor {
   public:
-    Sensor(std::string path, eSensorType sensor_type) : m_szDriverFile{std::move(path)}, m_eIC{sensor_type} {}
+    Sensor(std::string path, eSensorType sensor_type) : m_szDriverFile{path}, m_eIC{sensor_type} {}
     std::optional<double> read(const eMeasureType type) const;
 
   private:

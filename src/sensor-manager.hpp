@@ -8,10 +8,13 @@
 
 #include "sensor.hpp"
 
+int salve();
+
 class SensorManager {
     using sensor_ptr = std::shared_ptr<Sensor>;
 
   public:
+    SensorManager(std::string hwmonPath) : m_szBaseHwmonPath{hwmonPath} {}
     void    runManager();
     void    registerSensors(char** sensorNames);
     int32_t startTracking(std::string& sensorName);
