@@ -4,7 +4,7 @@ project('read-sensors', 'cpp',
     'warning_level=3',
     'cpp_std=c++17',
     'optimization=3',
-    'buildtype=release',
+    'buildtype=debug',
   ])
 
   add_project_arguments(

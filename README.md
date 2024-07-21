@@ -11,7 +11,7 @@
 - [ ] Generalize Interface For Sensors 
     - [ ] Add LTC Device 
 - [ ] Code SensorManager
-    - [ ] Generate Sensor Map Dynamically
+    - [x] Generate Sensor Map Dynamically
 
 
 

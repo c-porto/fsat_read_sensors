@@ -1,35 +1,146 @@
+#include "sensor-manager.hpp"
+
 #include <array>
+#include <chrono>
+#include <cstdio>
+#include <cstring>
+#include <exception>
 #include <filesystem>
+#include <fstream>
+#include <ios>
+#include <iostream>
 #include <memory>
+#include <sstream>
+#include <string_view>
+#include <thread>
+#include <utility>
+#include <vector>
 
 #include "log.hpp"
 #include "sensor.hpp"
 
-#define DEFAULT_LOG_DIR       "./log"
-#define DEFAULT_SYS_CLASS_DIR "./test/sys/class/hwmon/hwmon0/"
+namespace fs = std::filesystem;
 
-int salve() {
-    if (!std::filesystem::exists(DEFAULT_LOG_DIR))
-        std::filesystem::create_directories(DEFAULT_LOG_DIR);
+static void
+readAllInaTypes(const std::pair<std::string, std::shared_ptr<Sensor> > &ina)
+{
+	const std::array<eMeasureType, 4> types = { BUS_VOLT, SHUNT_VOLT,
+						    CURRENT, POWER };
 
-    logs::init(DEFAULT_LOG_DIR);
+	for (const auto &type : types) {
+		std::optional<double> value = ina.second->read(type);
 
-    logs::coloredLogs = true;
+		if (value)
+			logs::logSensorData(ina.first, type, *value);
+	}
+}
 
-    std::unique_ptr<const Sensor>        test = std::make_unique<const Sensor>(DEFAULT_SYS_CLASS_DIR, TMP112);
+void SensorManager::matchForDeviceNames(std::vector<std::string> &searchList,
+					std::string name, fileIter it)
+{
+	for (auto dev = searchList.begin(); dev != searchList.end(); ++dev) {
+		if (*dev == name) {
+			std::string hwmonPath = it.path().parent_path();
 
-    const std::array<eMeasureType, 5ULL> arr = {SHUNT_VOLT, CURRENT, BUS_VOLT, POWER, TEMP};
+			auto sensor = std::make_shared<Sensor>(
+				hwmonPath,
+				(name == std::string("tmp102")) ?
+					TMP112 :
+					INA219);
+			auto pair = std::make_pair(name, sensor);
 
-    for (const auto& ms : arr) {
-        auto read = test->read(ms);
+			/* Save path+dev pair on the internal map */
+			m_mSensorMap.insert(pair);
 
-        if (!read)
-            logs::log(WARN, "FUNCIONA O OPTIONAL");
+			logs::log(INFO, "Found device |" + *dev +
+						"| in path: " + hwmonPath);
 
-        std::string readTest = "Read value: " + std::to_string(*read);
+			/* Remove device of the search list */
+			searchList.erase(dev);
 
-        logs::log(INFO, readTest);
-    }
+			return;
+		}
+	}
+}
 
-    return 0;
+void SensorManager::registerSensors(std::vector<std::string>&& searchList)
+{
+	const std::string targetName = "name";
+
+	if (!fs::exists(m_szBaseHwmonPath) ||
+	    !fs::is_directory(m_szBaseHwmonPath)) {
+		logs::log(ERR, "Base path provided is not valid!");
+		logs::log(ERR, "Terminating...");
+
+		exit(1);
+	}
+
+	try {
+		for (const auto &file :
+		     fs::recursive_directory_iterator(m_szBaseHwmonPath)) {
+			if (file.is_regular_file() &&
+			    file.path().filename() == targetName) {
+				std::string deviceName;
+				std::ifstream ifs;
+
+				ifs.open(file.path(), std::ios::in);
+				std::getline(ifs, deviceName);
+
+				this->matchForDeviceNames(
+					searchList, deviceName.c_str(), file);
+			}
+		}
+	} catch (std::exception &e) {
+		std::stringstream ss;
+		ss << "Exception occurred: " << e.what() << "\n";
+		logs::log(ERR, ss.str());
+
+		return;
+	}
+
+	for (const auto &unreg : searchList)
+		logs::log(WARN,
+			  "Could not register device: " + std::string(unreg));
+}
+
+void SensorManager::readTrackedSensors(void)
+{
+	for (const auto &sensorPair : m_dTrackingSensors) {
+		std::shared_ptr<Sensor> sensor = sensorPair.second;
+
+		if (sensor->m_eIC == TMP112) {
+			std::optional<double> read = sensor->read(TEMP);
+
+			if (read)
+				logs::logSensorData(sensorPair.first, TEMP,
+						    *read);
+
+		} else {
+			readAllInaTypes(sensorPair);
+		}
+	}
+}
+
+void SensorManager::runManager(void)
+{
+	while (true) {
+		if (!m_dTrackingSensors.empty()) {
+			this->readTrackedSensors();
+		}
+
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+	}
+}
+
+void SensorManager::trackRegisteredDevices(void)
+{
+	logs::log(INFO, "Start tracking register devices...");
+
+	for (const auto &pair : m_mSensorMap)
+		m_dTrackingSensors.push_back(pair);
+}
+
+int32_t startTracking(std::string_view sensorName)
+{
+	return -1;
 }
