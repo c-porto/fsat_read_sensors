@@ -1,10 +1,30 @@
 project('read-sensors', 'cpp',
   version : '0.1',
-  default_options : ['warning_level=3', 'cpp_std=c++17'])
+  default_options : [
+    'warning_level=3',
+    'cpp_std=c++17',
+    'optimization=3',
+    'buildtype=release',
+  ])
 
-sources = files('read-sensors.cpp', 'read-sensors.hpp', 'log.hpp', 'log.cpp', 'sensor.hpp', 'sensor.cpp')
+  add_project_arguments(
+  [
+    '-Wno-unused-parameter',
+    '-Wno-unused-value',
+    '-Wno-missing-field-initializers',
+    '-Wno-narrowing',
+    '-Wno-pointer-arith',
+  ],
+  language: 'cpp')
 
-exe = executable('read_sensors', sources,
-  install : true)
+sources = files(
+    'src/read-sensors.hpp', 
+    'src/read-sensors.cpp',
+    'src/log.hpp',
+    'src/log.cpp',
+    'src/sensor.hpp',
+    'src/sensor.cpp'
+  )
 
-test('basic', exe)
+exe = executable('read_sensors', sources, install : false)
+
