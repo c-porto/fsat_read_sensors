@@ -2,7 +2,6 @@
 
 ## TODO's 
 
-- [ ] CLI Config 
 - [ ] Daemon Service 
     - [ ] Unix Socket 
     - [ ] Multi-threading
@@ -10,9 +9,9 @@
     - [ ] Systemd Service
 - [ ] Generalize Interface For Sensors 
     - [ ] Add LTC Device 
-- [ ] Code SensorManager
+- [X] Code SensorManager
     - [x] Generate Sensor Map Dynamically
-
+- [ ] Optimize the code 
 
 
 
