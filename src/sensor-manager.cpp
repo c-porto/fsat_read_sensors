@@ -11,7 +11,6 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -127,7 +126,7 @@ void CSensorManager::trackRegisteredDevices(void) {
 }
 
 int32_t CSensorManager::startTracking(std::string& sensorName) {
-    int32_t err = -1;
+    int32_t err   = -1;
     auto    found = m_mSensorMap.find(sensorName);
 
     if (found != m_mSensorMap.end()) {

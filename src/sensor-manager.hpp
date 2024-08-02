@@ -14,7 +14,7 @@
 namespace fs = std::filesystem;
 
 class CSensorManager {
-    using fileIter    = std::filesystem::directory_entry;
+    using fileIter   = std::filesystem::directory_entry;
     using sensorPtr  = std::shared_ptr<CSensor>;
     using sensorPair = std::pair<std::string, sensorPtr>;
 
@@ -26,11 +26,11 @@ class CSensorManager {
     int32_t startTracking(std::string& sensorName);
 
   private:
-    void                                        matchForDeviceNames(std::vector<std::string>& devs, std::string name, fs::path it);
-    void                                        readTrackedSensors(void);
+    void                                       matchForDeviceNames(std::vector<std::string>& devs, std::string name, fs::path it);
+    void                                       readTrackedSensors(void);
     std::unordered_map<std::string, sensorPtr> m_mSensorMap;
     std::deque<sensorPair>                     m_dTrackingSensors;
-    std::string                                 m_szBaseHwmonPath;
+    std::string                                m_szBaseHwmonPath;
 };
 
 #endif
