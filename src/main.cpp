@@ -4,8 +4,8 @@
 #include "sensor-manager.hpp"
 #include <vector>
 
-#define BASE_PATH "test/sys/class/hwmon/"
-#define LOG_DIR   "test/etc/fsat/log/"
+#define BASE_PATH "/sys/class/hwmon/"
+#define LOG_DIR   "/etc/fsat/log/"
 
 std::vector<std::string> devs = {"main-radio-power", "tmp102", "obdh-power", "beacon-power", "edc-power", "beacon2-power", "antenna-power", "payload-power"};
 
