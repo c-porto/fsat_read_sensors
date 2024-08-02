@@ -1,6 +1,7 @@
+#include "sensor-manager.hpp"
+
 #include <array>
 #include <chrono>
-#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -15,13 +16,12 @@
 #include <utility>
 #include <vector>
 
-#include "sensor-manager.hpp"
 #include "log.hpp"
 #include "sensor.hpp"
 
 namespace fs = std::filesystem;
 
-static void readAllInaTypes(const std::pair<std::string, std::shared_ptr<Sensor> >& ina) {
+static void readAllInaTypes(const std::pair<std::string, std::shared_ptr<CSensor> >& ina) {
     const std::array<eMeasureType, 4> types = {BUS_VOLT, SHUNT_VOLT, CURRENT, POWER};
 
     for (const auto& type : types) {
@@ -32,12 +32,12 @@ static void readAllInaTypes(const std::pair<std::string, std::shared_ptr<Sensor>
     }
 }
 
-void SensorManager::matchForDeviceNames(std::vector<std::string>& searchList, std::string name, fileIter it) {
+void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, std::string name, fs::path it) {
     for (auto dev = searchList.begin(); dev != searchList.end(); ++dev) {
         if (*dev == name) {
-            std::string hwmonPath = it.path().parent_path();
+            std::string hwmonPath = it.parent_path();
 
-            auto        sensor = std::make_shared<Sensor>(hwmonPath, (name == std::string("tmp102")) ? TMP112 : INA219);
+            auto        sensor = std::make_shared<CSensor>(hwmonPath, (name == std::string("tmp102")) ? TMP112 : INA219);
             auto        pair   = std::make_pair(name, sensor);
 
             /* Save path+dev pair on the internal map */
@@ -53,8 +53,9 @@ void SensorManager::matchForDeviceNames(std::vector<std::string>& searchList, st
     }
 }
 
-void SensorManager::registerSensors(std::vector<std::string>&& searchList) {
-    const std::string targetName = "uevent";
+void CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
+    const std::string        targetName = "uevent";
+    std::vector<std::string> list       = std::move(searchList);
 
     if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
         logs::log(ERR, "Base path provided is not valid!");
@@ -64,13 +65,14 @@ void SensorManager::registerSensors(std::vector<std::string>&& searchList) {
     }
 
     try {
-        for (const auto& file : fs::recursive_directory_iterator(m_szBaseHwmonPath)) {
-            if (file.is_regular_file() && file.path().filename() == targetName) {
+        for (const auto& file : fs::directory_iterator(m_szBaseHwmonPath, fs::directory_options::follow_directory_symlink)) {
+            fs::path ufile = file.path() / targetName;
+            if (fs::exists(ufile)) {
                 std::ifstream ifs;
                 std::string   deviceName;
                 std::string   input;
 
-                ifs.open(file.path(), std::ios::in);
+                ifs.open(ufile, std::ios::in);
                 std::getline(ifs, input);
 
                 if (input.rfind("OF_NAME=", 0) == 0)
@@ -78,7 +80,7 @@ void SensorManager::registerSensors(std::vector<std::string>&& searchList) {
                 else
                     continue;
 
-                this->matchForDeviceNames(searchList, deviceName.c_str(), file);
+                this->matchForDeviceNames(list, deviceName, ufile);
             }
         }
     } catch (std::exception& e) {
@@ -93,9 +95,8 @@ void SensorManager::registerSensors(std::vector<std::string>&& searchList) {
         logs::log(WARN, "Could not register device: " + std::string(unreg));
 }
 
-void SensorManager::readTrackedSensors(void) {
+void CSensorManager::readTrackedSensors(void) {
     for (const auto& sensorPair : m_dTrackingSensors) {
-
         if (sensorPair.second->m_eIC == TMP112) {
             std::optional<double> read = sensorPair.second->read(TEMP);
 
@@ -108,7 +109,7 @@ void SensorManager::readTrackedSensors(void) {
     }
 }
 
-void SensorManager::runManager(void) {
+void CSensorManager::runManager(void) {
     while (true) {
         if (!m_dTrackingSensors.empty()) {
             this->readTrackedSensors();
@@ -118,13 +119,21 @@ void SensorManager::runManager(void) {
     }
 }
 
-void SensorManager::trackRegisteredDevices(void) {
+void CSensorManager::trackRegisteredDevices(void) {
     logs::log(INFO, "Start tracking register devices...");
 
     for (const auto& pair : m_mSensorMap)
         m_dTrackingSensors.push_back(pair);
 }
 
-int32_t startTracking(std::string_view sensorName) {
-    return -1;
+int32_t CSensorManager::startTracking(std::string& sensorName) {
+    int32_t err = -1;
+    auto    found = m_mSensorMap.find(sensorName);
+
+    if (found != m_mSensorMap.end()) {
+        m_mSensorMap.insert(*found);
+        err = 0;
+    }
+
+    return err;
 }

@@ -17,9 +17,9 @@ enum eSensorType : int32_t {
     TMP112,
 };
 
-class Sensor {
+class CSensor {
   public:
-    Sensor(std::string path, eSensorType sensor_type) : m_eIC{sensor_type}, m_szDriverFile{path} {}
+    CSensor(std::string path, eSensorType sensor_type) : m_eIC{sensor_type}, m_szDriverFile{path} {}
     std::optional<double> read(const eMeasureType type) const;
     const eSensorType     m_eIC;
 

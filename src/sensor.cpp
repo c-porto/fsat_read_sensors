@@ -33,7 +33,7 @@ static std::optional<int32_t> readDriverFile(const std::string& file) {
     return std::optional<int32_t>{rawValue};
 }
 
-std::optional<double> Sensor::read(const eMeasureType type) const {
+std::optional<double> CSensor::read(const eMeasureType type) const {
     std::optional<int32_t> rawValue;
     std::optional<double>  reading;
     std::string            readPath = m_szDriverFile;

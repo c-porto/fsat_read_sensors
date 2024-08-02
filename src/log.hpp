@@ -25,6 +25,6 @@ namespace logs {
     void               log(const LogLevel level, std::string str);
 
     void               logSensorData(std::string sensorName, eMeasureType type, double data);
-} 
+} // namespace logs
 
 #endif
