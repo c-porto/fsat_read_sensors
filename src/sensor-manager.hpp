@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 #include "sensor.hpp"
 
@@ -29,8 +30,9 @@ class CSensorManager {
     void                                       matchForDeviceNames(std::vector<std::string>& devs, std::string name, fs::path it);
     void                                       readTrackedSensors(void);
     std::unordered_map<std::string, sensorPtr> m_mSensorMap;
-    std::deque<sensorPair>                     m_dTrackingSensors;
+    std::vector<sensorPair>                    m_vTrackingSensors;
     std::string                                m_szBaseHwmonPath;
+    std::mutex                                 m_lock;
 };
 
 #endif

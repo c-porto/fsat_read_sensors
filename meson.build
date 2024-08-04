@@ -24,8 +24,9 @@ sources = files(
     'src/log.cpp',
     'src/sensor.hpp',
     'src/sensor.cpp',
+    'src/daemon.hpp',
+    'src/daemon.cpp',
     'src/main.cpp',
   )
 
-exe = executable('read_sensors', sources, install : false)
-
+exe = executable('read_sensors', sources)

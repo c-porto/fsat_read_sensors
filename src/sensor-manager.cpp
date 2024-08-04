@@ -1,5 +1,6 @@
 #include "sensor-manager.hpp"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -10,6 +11,7 @@
 #include <ios>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <thread>
 #include <utility>
@@ -95,7 +97,7 @@ void CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
 }
 
 void CSensorManager::readTrackedSensors(void) {
-    for (const auto& sensorPair : m_dTrackingSensors) {
+    for (const auto& sensorPair : m_vTrackingSensors) {
         if (sensorPair.second->m_eIC == TMP112) {
             std::optional<double> read = sensorPair.second->read(TEMP);
 
@@ -110,7 +112,7 @@ void CSensorManager::readTrackedSensors(void) {
 
 void CSensorManager::runManager(void) {
     while (true) {
-        if (!m_dTrackingSensors.empty()) {
+        if (!m_vTrackingSensors.empty()) {
             this->readTrackedSensors();
         }
 
@@ -122,17 +124,27 @@ void CSensorManager::trackRegisteredDevices(void) {
     logs::log(INFO, "Start tracking register devices...");
 
     for (const auto& pair : m_mSensorMap)
-        m_dTrackingSensors.push_back(pair);
+        m_vTrackingSensors.push_back(pair);
 }
 
 int32_t CSensorManager::startTracking(std::string& sensorName) {
-    int32_t err   = -1;
-    auto    found = m_mSensorMap.find(sensorName);
+    auto found = m_mSensorMap.find(sensorName);
 
-    if (found != m_mSensorMap.end()) {
-        m_mSensorMap.insert(*found);
-        err = 0;
+    if (found == m_mSensorMap.end()) {
+        logs::log(WARN, "Device was not properly registered! Can't track it!");
+        return -1;
     }
 
-    return err;
+    for (auto it = m_vTrackingSensors.begin(); it != m_vTrackingSensors.end(); ++it) {
+        if (it->first == found->first) {
+            logs::log(WARN, "Device is already being tracked!!!");
+            return -1;
+        }
+    }
+
+    std::lock_guard<std::mutex> lock{this->m_lock};
+
+    m_vTrackingSensors.push_back(*found);
+
+    return 0;
 }

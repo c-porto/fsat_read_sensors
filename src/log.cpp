@@ -104,5 +104,5 @@ void logs::log(const LogLevel level, std::string str) {
     ofs.close();
 
     if (!disableStdOut)
-        std::cout << ((!coloredLogs) ? str : coloredStr) << "\n";
+        std::cout << ((!coloredLogs) ? str : coloredStr) << std::endl;
 }
