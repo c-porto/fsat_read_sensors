@@ -23,6 +23,7 @@ class CSensorManager {
     CSensorManager(std::string hwmonPath) : m_szBaseHwmonPath{hwmonPath} {}
     void    runManager(void);
     void    registerSensors(std::vector<std::string>&& searchList);
+    void    registerSingleSensor(const std::string& sensorName);
     void    trackRegisteredDevices(void);
     int32_t startTracking(std::string& sensorName);
 

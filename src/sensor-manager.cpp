@@ -41,6 +41,13 @@ void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, s
             auto        sensor = std::make_shared<CSensor>(hwmonPath, (name == std::string("tmp102")) ? TMP112 : INA219);
             auto        pair   = std::make_pair(name, sensor);
 
+            for (auto it = m_mSensorMap.begin(); it != m_mSensorMap.end(); ++it) {
+                if (it->first == name) {
+                    logs::log(WARN, "Device is already registered!!!");
+                    return;
+                }
+            }
+
             /* Save path+dev pair on the internal map */
             m_mSensorMap.insert(pair);
 
@@ -120,6 +127,49 @@ void CSensorManager::runManager(void) {
     }
 }
 
+void CSensorManager::registerSingleSensor(const std::string& sensorName)
+{
+    const std::string        targetName = "uevent";
+    std::vector<std::string> list{sensorName};
+
+    if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
+        logs::log(ERR, "Base path provided is not valid!");
+        logs::log(ERR, "Terminating...");
+
+        exit(1);
+    }
+
+    try {
+        for (const auto& file : fs::directory_iterator(m_szBaseHwmonPath, fs::directory_options::follow_directory_symlink)) {
+            fs::path ufile = file.path() / targetName;
+            if (fs::exists(ufile)) {
+                std::ifstream ifs;
+                std::string   deviceName;
+                std::string   input;
+
+                ifs.open(ufile, std::ios::in);
+                std::getline(ifs, input);
+
+                if (input.rfind("OF_NAME=", 0) == 0)
+                    deviceName = input.substr(strlen("OF_NAME="));
+                else
+                    continue;
+
+                this->matchForDeviceNames(list, deviceName, ufile);
+            }
+        }
+    } catch (std::exception& e) {
+        std::stringstream ss;
+        ss << "Exception occurred: " << e.what() << "\n";
+        logs::log(ERR, ss.str());
+
+        return;
+    }
+
+    for (const auto& unreg : list)
+        logs::log(WARN, "Could not register device: " + std::string(unreg));
+}
+
 void CSensorManager::trackRegisteredDevices(void) {
     logs::log(INFO, "Start tracking register devices...");
 
@@ -141,6 +191,8 @@ int32_t CSensorManager::startTracking(std::string& sensorName) {
             return -1;
         }
     }
+
+    logs::log(INFO, "Now tracking |" + sensorName + "| sensor");
 
     std::lock_guard<std::mutex> lock{this->m_lock};
 
