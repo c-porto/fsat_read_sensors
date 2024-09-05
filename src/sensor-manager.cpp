@@ -127,8 +127,7 @@ void CSensorManager::runManager(void) {
     }
 }
 
-void CSensorManager::registerSingleSensor(const std::string& sensorName)
-{
+void CSensorManager::registerSingleSensor(const std::string& sensorName) {
     const std::string        targetName = "uevent";
     std::vector<std::string> list{sensorName};
 
@@ -197,6 +196,29 @@ int32_t CSensorManager::startTracking(std::string& sensorName) {
     std::lock_guard<std::mutex> lock{this->m_lock};
 
     m_vTrackingSensors.push_back(*found);
+
+    return 0;
+}
+
+void CSensorManager::unregisterSingleSensor(const std::string& sensorName) {
+    auto found = m_mSensorMap.erase(sensorName);
+
+    if (found == 0) {
+        logs::log(ERR, "Sensor requested was not registered previously!");
+    }
+}
+
+int32_t CSensorManager::stopTracking(std::string& sensorName) {
+    std::lock_guard<std::mutex> lock{this->m_lock};
+
+    auto                        deleted = std::remove_if(m_vTrackingSensors.begin(), m_vTrackingSensors.end(), [sensorName](sensorPair p) { return p.first == sensorName; });
+
+    if (deleted == m_vTrackingSensors.end()) {
+        logs::log(ERR, "Sensor requested was not being tracked!");
+        return -1;
+    }
+
+    m_vTrackingSensors.erase(deleted, m_vTrackingSensors.end());
 
     return 0;
 }

@@ -9,9 +9,11 @@
 #include "sensor-manager.hpp"
 
 enum eFlatSatCommands {
-    CMD_NONE            = 0,
-    CMD_TRACK_SENSOR    = (1 << 0),
-    CMD_REGISTER_SENSOR = (1 << 1),
+    CMD_NONE,
+    CMD_TRACK_SENSOR,
+    CMD_REGISTER_SENSOR,
+    CMD_UNTRACK_SENSOR,
+    CMD_UNREGISTER_SENSOR
 };
 
 class CDaemon {

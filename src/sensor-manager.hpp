@@ -1,7 +1,6 @@
 #ifndef READ_SENSORS_HPP_
 #define READ_SENSORS_HPP_
 
-#include <deque>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -24,8 +23,10 @@ class CSensorManager {
     void    runManager(void);
     void    registerSensors(std::vector<std::string>&& searchList);
     void    registerSingleSensor(const std::string& sensorName);
+    void    unregisterSingleSensor(const std::string& sensorName);
     void    trackRegisteredDevices(void);
     int32_t startTracking(std::string& sensorName);
+    int32_t stopTracking(std::string& sensorName);
 
   private:
     void                                       matchForDeviceNames(std::vector<std::string>& devs, std::string name, fs::path it);

@@ -7,7 +7,7 @@
 #include "log.hpp"
 
 struct SParsedArgs {
-    uint8_t flags;
+    uint8_t cmd;
     uint8_t len;
     char*   payload;
 };
@@ -22,7 +22,7 @@ class CParse {
 
         SParsedArgs pkt;
 
-        pkt.flags   = (*reinterpret_cast<uint8_t*>(packet));
+        pkt.cmd     = (*reinterpret_cast<uint8_t*>(packet));
         pkt.len     = (*(reinterpret_cast<uint8_t*>(packet) + 1UL));
         pkt.payload = reinterpret_cast<char*>(packet) + 2UL;
 

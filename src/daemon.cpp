@@ -19,8 +19,8 @@ CDaemon::CDaemon(std::shared_ptr<CSensorManager> man) : m_pManager{man} {
 
 void CDaemon::run(void) {
     constexpr size_t bufSize = 256U;
-    char buffer[bufSize];
-    size_t readSize;
+    char             buffer[bufSize];
+    size_t           readSize;
 
     logs::log(INFO, "Starting to listen to socket...");
 
@@ -43,23 +43,41 @@ void CDaemon::setupSocket(void) {
 }
 
 void CDaemon::parseCommand(void* packet, size_t size) {
-    std::optional<SParsedArgs> cmd = CParse::parsePacket(packet, size);
+    std::optional<SParsedArgs> pkt = CParse::parsePacket(packet, size);
 
-    if (!cmd)
+    if (!pkt)
         return;
 
-    if (cmd->flags & CMD_TRACK_SENSOR) {
-        logs::log(INFO, "Track sensor command received");
+    switch (pkt->cmd) {
+        case CMD_TRACK_SENSOR: {
+            logs::log(INFO, "Track sensor command received");
 
-        std::string sensor{cmd->payload, cmd->len};
-        m_pManager->startTracking(sensor);
-    }
+            std::string sensor{pkt->payload, pkt->len};
+            m_pManager->startTracking(sensor);
+            break;
+        }
+        case CMD_REGISTER_SENSOR: {
+            logs::log(INFO, "Register sensor command received");
 
-    if (cmd->flags & CMD_REGISTER_SENSOR) {
-        logs::log(INFO, "Register sensor command received");
+            std::string sensor{pkt->payload, pkt->len};
+            m_pManager->registerSingleSensor(sensor);
+            break;
+        }
+        case CMD_UNTRACK_SENSOR: {
+            logs::log(INFO, "Untrack sensor command received");
 
-        std::string sensor{cmd->payload, cmd->len};
-        m_pManager->registerSingleSensor(sensor);
+            std::string sensor{pkt->payload, pkt->len};
+            m_pManager->stopTracking(sensor);
+            break;
+        }
+        case CMD_UNREGISTER_SENSOR: {
+            logs::log(INFO, "Unregister sensor command received");
+
+            std::string sensor{pkt->payload, pkt->len};
+            m_pManager->unregisterSingleSensor(sensor);
+            break;
+        }
+        default: logs::log(ERR, "Invalid command received!"); break;
     }
 }
 
