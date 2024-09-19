@@ -123,7 +123,7 @@ void CSensorManager::runManager(void) {
             this->readTrackedSensors();
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(m_MeasurementPeriodMS));
     }
 }
 
@@ -221,4 +221,10 @@ int32_t CSensorManager::stopTracking(std::string& sensorName) {
     m_vTrackingSensors.erase(deleted, m_vTrackingSensors.end());
 
     return 0;
+}
+
+void CSensorManager::setMeasurementPeriod(uint64_t period_ms) {
+    std::lock_guard<std::mutex> lock{this->m_lock};
+
+    m_MeasurementPeriodMS = period_ms;
 }
