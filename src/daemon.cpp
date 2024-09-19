@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <thread>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -8,6 +9,20 @@
 #include "parser.hpp"
 #include "daemon.hpp"
 #include "log.hpp"
+
+namespace {
+    uint64_t strToU64(const char* str) {
+        try {
+            return static_cast<uint64_t>(std::stoull(str, nullptr, 10));
+        } catch (const std::invalid_argument& e) {
+            logs::log(ERR, "Invalid string to convert: " + std::string(e.what()));
+            return 0;
+        } catch (const std::out_of_range& e) {
+            logs::log(ERR, "Out of Range to convert: " + std::string(e.what()));
+            return 0;
+        }
+    }
+}
 
 CDaemon::CDaemon(std::shared_ptr<CSensorManager> man) : m_pManager{man} {
     this->setupSocket();
@@ -75,6 +90,20 @@ void CDaemon::parseCommand(void* packet, size_t size) {
 
             std::string sensor{pkt->payload, pkt->len};
             m_pManager->unregisterSingleSensor(sensor);
+            break;
+        }
+        case CMD_SET_MEASUREMENT_PERIOD: {
+            logs::log(INFO, "Set measurement period command received");
+
+            uint64_t new_period = strToU64(reinterpret_cast<const char*>(pkt->payload));
+
+            logs::log(INFO, "New period: " + std::to_string(new_period) + " ms");
+            
+            if (new_period != 0) {
+                m_pManager->setMeasurementPeriod(new_period);
+            } else {
+                logs::log(ERR, "Invalid measurement period given!!");
+            }
             break;
         }
         default: logs::log(ERR, "Invalid command received!"); break;
