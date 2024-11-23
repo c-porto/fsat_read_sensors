@@ -16,10 +16,11 @@ enum LogLevel {
 namespace logs {
     inline std::string logFile;
     inline std::string dataFile;
-    inline bool        disableTime         = false;
-    inline bool        disableStdOut       = false;
-    inline bool        disableSensorStdOut = false;
-    inline bool        coloredLogs         = false;
+    inline bool        disableTime          = false;
+    inline bool        disableStdOut        = false;
+    inline bool        disableSensorStdOut  = false;
+    inline bool        disableSensorFileLog = false;
+    inline bool        coloredLogs          = false;
 
     void               init(std::string logDir);
     void               log(const LogLevel level, std::string str);

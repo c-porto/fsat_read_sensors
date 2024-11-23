@@ -18,6 +18,9 @@ void logs::init(std::string log_dir) {
 }
 
 void logs::logSensorData(std::string sensor_name, eMeasureType type, double data) {
+    if (disableSensorFileLog)
+        return;
+
     std::string logMsg = "";
 
     if (!disableTime) {
