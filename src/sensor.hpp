@@ -17,6 +17,13 @@ enum eSensorType : int32_t {
     TMP112,
 };
 
+struct SSensorReading {
+    std::string sensorName;
+    std::string sensorType;
+    std::string measurementType;
+    double      value;
+};
+
 class CSensor {
   public:
     CSensor(std::string path, eSensorType sensor_type) : m_eIC{sensor_type}, m_szDriverFile{path} {}
