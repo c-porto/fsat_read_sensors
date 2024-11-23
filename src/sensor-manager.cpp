@@ -22,17 +22,6 @@
 
 namespace fs = std::filesystem;
 
-static void readAllInaTypes(const std::pair<std::string, std::shared_ptr<CSensor> >& ina) {
-    const std::array<eMeasureType, 4> types = {BUS_VOLT, SHUNT_VOLT, CURRENT, POWER};
-
-    for (const auto& type : types) {
-        std::optional<double> value = ina.second->read(type);
-
-        if (value)
-            logs::logSensorData(ina.first, type, *value);
-    }
-}
-
 void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, std::string name, fs::path it) {
     for (auto dev = searchList.begin(); dev != searchList.end(); ++dev) {
         if (*dev == name) {
@@ -108,8 +97,18 @@ void CSensorManager::readTrackedSensors(void) {
         if (sensorPair.second->m_eIC == TMP112) {
             std::optional<double> read = sensorPair.second->read(TEMP);
 
-            if (read)
+            if (read) {
                 logs::logSensorData(sensorPair.first, TEMP, *read);
+
+                SSensorReading r{
+                    .sensorName      = sensorPair.first,
+                    .sensorType      = TO_STRINGZ(TMP112),
+                    .measurementType = TO_STRINGZ(TEMP),
+                    .value           = *read,
+                };
+
+                m_DB.addMeasurementToDB(r);
+            }
 
         } else {
             readAllInaTypes(sensorPair);
@@ -227,4 +226,25 @@ void CSensorManager::setMeasurementPeriod(uint64_t period_ms) {
     std::lock_guard<std::mutex> lock{this->m_lock};
 
     m_MeasurementPeriodMS = period_ms;
+}
+
+void CSensorManager::readAllInaTypes(const std::pair<std::string, std::shared_ptr<CSensor> >& ina) {
+    const std::array<eMeasureType, 4> types = {BUS_VOLT, SHUNT_VOLT, CURRENT, POWER};
+
+    for (const auto& type : types) {
+        std::optional<double> value = ina.second->read(type);
+
+        if (value) {
+            logs::logSensorData(ina.first, type, *value);
+
+            SSensorReading r{
+                .sensorName      = ina.first,
+                .sensorType      = TO_STRINGZ(INA219),
+                .measurementType = meas_type_to_str(type),
+                .value           = *value,
+            };
+
+            m_DB.addMeasurementToDB(r);
+        }
+    }
 }

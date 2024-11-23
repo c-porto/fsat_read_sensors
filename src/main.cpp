@@ -13,9 +13,11 @@
 
 #define BASE_PATH (TEST_FS_PATH "/sys/class/hwmon/")
 #define LOG_DIR   (TEST_FS_PATH "/var/log/fsat/")
+#define DB_PATH   (TEST_FS_PATH "/var/local/read-sensors.db")
 #else
 #define BASE_PATH "/sys/class/hwmon/"
 #define LOG_DIR   "/var/log/fsat/"
+#define DB_PATH   "/var/local/read-sensors.db"
 #endif
 
 std::vector<std::string> devs = {"main-radio-power", "tmp102", "obdh-power", "beacon-power", "edc-power", "beacon2-power", "antenna-power", "payload-power"};
@@ -25,7 +27,7 @@ int main(int argc, char** argv) {
     logs::disableSensorStdOut = true;
     logs::disableTime = true;
 
-    std::shared_ptr<CSensorManager> man = std::make_shared<CSensorManager>(BASE_PATH);
+    std::shared_ptr<CSensorManager> man = std::make_shared<CSensorManager>(BASE_PATH, DB_PATH);
 
     CDaemon daemon{man};
 
