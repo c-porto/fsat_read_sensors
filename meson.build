@@ -2,7 +2,7 @@ project('read-sensors', 'cpp',
   version : '0.1',
   default_options : [
     'warning_level=3',
-    'cpp_std=c++17',
+    'cpp_std=c++20',
     'optimization=3',
     'buildtype=debug',
   ])
@@ -27,6 +27,10 @@ sources = files(
     'src/daemon.hpp',
     'src/daemon.cpp',
     'src/main.cpp',
+    'src/db.hpp',
+    'src/db.cpp',
   )
 
-exe = executable('read_sensors', sources)
+sqlite3_dep = dependency('sqlite3')
+
+exe = executable('read_sensors', sources, dependencies: sqlite3_dep)
