@@ -4,7 +4,7 @@ project('read-sensors', 'cpp',
     'warning_level=3',
     'cpp_std=c++20',
     'optimization=3',
-    'buildtype=debug',
+    'buildtype=release',
   ])
 
   add_project_arguments(
@@ -31,6 +31,20 @@ sources = files(
     'src/db.cpp',
   )
 
+install_src = get_option('install_src')
+
 sqlite3_dep = dependency('sqlite3')
 
-exe = executable('read_sensors', sources, dependencies: sqlite3_dep)
+binary = executable('read_sensors', sources, dependencies: sqlite3_dep, install: true)
+
+if install_src
+  install_subdir('src', install_dir: get_option('src_install_dir'))
+endif
+
+install_data('services/read-sensors.service',
+             install_dir: get_option('systemd_unitdir'),
+             rename: 'read-sensors.service')
+
+install_data('services/read-sensors.socket',
+             install_dir: get_option('systemd_unitdir'),
+             rename: 'read-sensors.socket')

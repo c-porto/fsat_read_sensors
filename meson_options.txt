@@ -1,0 +1,5 @@
+option('install_src', type: 'boolean', value: false)
+
+option('src_install_dir', type: 'string', value: '/etc/fsat/read-sensors')
+
+option('systemd_unitdir', type: 'string', value: '/lib/systemd/system/')
