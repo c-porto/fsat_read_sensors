@@ -37,9 +37,6 @@ sqlite3_dep = dependency('sqlite3')
 
 binary = executable('read_sensors', sources, dependencies: sqlite3_dep, install: true)
 
-if install_src
-  install_subdir('src', install_dir: get_option('src_install_dir'))
-endif
 
 install_data('services/read-sensors.service',
              install_dir: get_option('systemd_unitdir'),
@@ -48,3 +45,8 @@ install_data('services/read-sensors.service',
 install_data('services/read-sensors.socket',
              install_dir: get_option('systemd_unitdir'),
              rename: 'read-sensors.socket')
+
+if install_src
+  install_data(sources,
+               install_dir: get_option('src_install_dir'))
+endif
