@@ -2,7 +2,7 @@
 Description=FlatSat2 Read Sensors socket
 
 [Socket]
-ListenDatagram=/run/read-sensors/read-sensors.sock
+ListenStream=/run/read-sensors/read-sensors.sock
 SocketMode=0666
 
 [Install]

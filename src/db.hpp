@@ -54,7 +54,7 @@ std::int8_t CSqliteDb::addMeasurementToDB(Sensor& sensor) {
     int32_t       result = sqlite3_prepare_v2(dbHandle_, insertStmt, -1, &stmt, nullptr);
 
     if (result) {
-        logs::log(ERR, "Failed to prepare DB statament!! Error: " + std::string{sqlite3_errmsg(dbHandle_)});
+        logs::log(ERR, "Failed to prepare DB statament!! Error: {}\n", std::string{sqlite3_errmsg(dbHandle_)});
         return -1;
     }
 
@@ -66,7 +66,7 @@ std::int8_t CSqliteDb::addMeasurementToDB(Sensor& sensor) {
     result = sqlite3_step(stmt);
 
     if (result != SQLITE_DONE) {
-        logs::log(ERR, "Failed to execute DB statament!! Error: " + std::string{sqlite3_errmsg(dbHandle_)});
+        logs::log(ERR, "Failed to execute DB statament!! Error: {}\n", std::string{sqlite3_errmsg(dbHandle_)});
         sqlite3_finalize(stmt);
         return -1;
     }

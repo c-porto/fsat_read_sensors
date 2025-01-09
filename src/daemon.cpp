@@ -3,29 +3,24 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
+#include <fstream>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <systemd/sd-daemon.h>
 
 #include "parser.hpp"
 #include "daemon.hpp"
 #include "log.hpp"
 
-namespace {
-    uint64_t strToU64(const char* str) {
-        try {
-            return static_cast<uint64_t>(std::stoull(str, nullptr, 10));
-        } catch (const std::invalid_argument& e) {
-            logs::log(ERR, "Invalid string to convert: " + std::string(e.what()));
-            return 0;
-        } catch (const std::out_of_range& e) {
-            logs::log(ERR, "Out of Range to convert: " + std::string(e.what()));
-            return 0;
-        }
-    }
-}
-
 CDaemon::CDaemon(std::shared_ptr<CSensorManager> man) : m_pManager{man} {
+    std::ofstream ofs;
+    pid_t         pid = getpid();
+
     this->setupSocket();
+
+    ofs.open("/run/read-sensors/read-sensors.pid", std::ios::out | std::ios::trunc);
+    ofs << pid;
+    ofs.close();
 
     m_tId = std::thread{&CDaemon::run, this};
 
@@ -33,90 +28,135 @@ CDaemon::CDaemon(std::shared_ptr<CSensorManager> man) : m_pManager{man} {
 }
 
 void CDaemon::run(void) {
-    constexpr size_t bufSize = 256U;
+    constexpr size_t bufSize = 1024U;
     char             buffer[bufSize];
     size_t           readSize;
 
-    logs::log(INFO, "Starting to listen to socket...");
+    logs::log(INFO, "Starting to listen to socket...\n");
 
     while (true) {
         readSize = this->rxCommand(buffer, bufSize);
 
-        this->parseCommand(buffer, readSize);
+        logs::log(INFO, "Received a command!\n");
+
+        if (readSize > 0) {
+            std::string res = this->parseCommand(buffer, readSize);
+
+            this->sendResponse(res.c_str(), res.size() + 1);
+        }
     }
 
     close(m_iSockFd);
 }
 
 void CDaemon::setupSocket(void) {
-    m_iSockFd = dup(0);
+    int num_fds = sd_listen_fds(0);
 
-    if (m_iSockFd < 0) {
-        logs::log(ERR, "Could not get unix socket id");
+    if (num_fds < 1) {
+        logs::log(ERR, "No socket file descriptors received.\n");
+        logs::log(ERR, "Terminating...\n");
+        exit(1);
+    }
+
+    m_iSockFd = SD_LISTEN_FDS_START;
+
+    // Check if the received FD is a valid listening socket
+    if (!sd_is_socket(m_iSockFd, AF_UNIX, SOCK_STREAM, -1)) {
+        logs::log(ERR, "No socket file descriptors received.\n");
+        logs::log(ERR, "Terminating...\n");
         exit(1);
     }
 }
 
-void CDaemon::parseCommand(void* packet, size_t size) {
-    std::optional<SParsedArgs> pkt = CParse::parsePacket(packet, size);
+std::string CDaemon::parseCommand(void* packet, size_t size) {
+    SParsedArgs      pkt = CParse::parsePacket(packet, size);
+    eFlatSatCommands cmd;
+    std::string      response;
+    int32_t          err = 0;
 
-    if (!pkt)
-        return;
+    if (pkt.error) {
+        logs::log(ERR, "Parsing request failed!\n");
+        return *pkt.error;
+    }
 
-    switch (pkt->cmd) {
+    cmd = *pkt.cmd;
+
+    switch (cmd) {
         case CMD_TRACK_SENSOR: {
-            logs::log(INFO, "Track sensor command received");
+            logs::log(INFO, "Track sensor command received.\n");
 
-            std::string sensor{pkt->payload, pkt->len};
-            m_pManager->startTracking(sensor);
+            err = m_pManager->startTracking(*pkt.sensor);
             break;
         }
         case CMD_REGISTER_SENSOR: {
-            logs::log(INFO, "Register sensor command received");
+            logs::log(INFO, "Register sensor command received.\n");
 
-            std::string sensor{pkt->payload, pkt->len};
-            m_pManager->registerSingleSensor(sensor);
+            err = m_pManager->registerSingleSensor(*pkt.sensor);
             break;
         }
         case CMD_UNTRACK_SENSOR: {
-            logs::log(INFO, "Untrack sensor command received");
+            logs::log(INFO, "Untrack sensor command received.\n");
 
-            std::string sensor{pkt->payload, pkt->len};
-            m_pManager->stopTracking(sensor);
+            err = m_pManager->stopTracking(*pkt.sensor);
             break;
         }
         case CMD_UNREGISTER_SENSOR: {
-            logs::log(INFO, "Unregister sensor command received");
+            logs::log(INFO, "Unregister sensor command received.\n");
 
-            std::string sensor{pkt->payload, pkt->len};
-            m_pManager->unregisterSingleSensor(sensor);
+            err = m_pManager->unregisterSingleSensor(*pkt.sensor);
             break;
         }
         case CMD_SET_MEASUREMENT_PERIOD: {
-            logs::log(INFO, "Set measurement period command received");
+            logs::log(INFO, "Set measurement period command received.\n");
 
-            uint64_t new_period = strToU64(reinterpret_cast<const char*>(pkt->payload));
+            logs::log(INFO, "New period: {} ms.\n", *pkt.measPeriod);
 
-            logs::log(INFO, "New period: " + std::to_string(new_period) + " ms");
-            
-            if (new_period != 0) {
-                m_pManager->setMeasurementPeriod(new_period);
-            } else {
-                logs::log(ERR, "Invalid measurement period given!!");
-            }
+            err = m_pManager->setMeasurementPeriod(*pkt.measPeriod);
             break;
         }
-        default: logs::log(ERR, "Invalid command received!"); break;
+        default: logs::log(ERR, "Invalid command received!\n"); break;
     }
+
+    if (err == 0)
+        response = std::format("Command `{}` was executed sucessfully!", cmdToString(cmd));
+    else
+        response = std::format("Command `{}` failed in execution! Check the service journal entries to obtain more information.", cmdToString(cmd));
+
+    return response;
 }
 
 ssize_t CDaemon::rxCommand(void* buff, size_t maxSize) {
-    ssize_t rbytes = recvfrom(m_iSockFd, buff, maxSize, 0, NULL, NULL);
+    int clientFd = accept(m_iSockFd, NULL, NULL);
 
-    if (rbytes < 0) {
-        logs::log(ERR, "Error receiving message from socket");
+    if (clientFd < 0) {
+        logs::log(ERR, "Error while accepting the connection!\n");
         return -1;
     }
 
-    return rbytes;
+    m_iClientFd = clientFd;
+
+    ssize_t rBytes = read(clientFd, buff, maxSize - 1);
+
+    if (rBytes < 0) {
+        logs::log(ERR, "Error while reading data from the client!\n");
+        return -1;
+    }
+
+    char* rq = static_cast<char*>(buff);
+
+    rq[rBytes] = '\0';
+
+    return rBytes;
+}
+
+ssize_t CDaemon::sendResponse(const char* res, size_t size) {
+    ssize_t sBytes;
+
+    sBytes = send(m_iClientFd, res, size, 0U);
+
+    if (sBytes < 0)
+        logs::log(ERR, "Error while sending response to client!\n");
+
+    close(m_iClientFd);
+    return sBytes;
 }

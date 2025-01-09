@@ -37,11 +37,11 @@ class CSensorManager {
   public:
     CSensorManager(std::string hwmonPath, std::string dbPath) : m_szBaseHwmonPath{hwmonPath}, m_DB{dbPath} {}
     void    runManager(void);
-    void    registerSensors(std::vector<std::string>&& searchList);
-    void    registerSingleSensor(const std::string& sensorName);
-    void    unregisterSingleSensor(const std::string& sensorName);
-    void    trackRegisteredDevices(void);
-    void    setMeasurementPeriod(const uint64_t time_ms);
+    int32_t registerSensors(std::vector<std::string>&& searchList);
+    int32_t registerSingleSensor(const std::string& sensorName);
+    int32_t unregisterSingleSensor(const std::string& sensorName);
+    int32_t trackRegisteredDevices(void);
+    int32_t setMeasurementPeriod(const uint64_t time_ms);
     int32_t startTracking(std::string& sensorName);
     int32_t stopTracking(std::string& sensorName);
 

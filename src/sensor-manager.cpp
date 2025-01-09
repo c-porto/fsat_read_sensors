@@ -12,7 +12,6 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
-#include <sstream>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -32,7 +31,7 @@ void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, s
 
             for (auto it = m_mSensorMap.begin(); it != m_mSensorMap.end(); ++it) {
                 if (it->first == name) {
-                    logs::log(WARN, "Device is already registered!!!");
+                    logs::log(WARN, "Device is already registered!!!\n");
                     return;
                 }
             }
@@ -40,7 +39,7 @@ void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, s
             /* Save path+dev pair on the internal map */
             m_mSensorMap.insert(pair);
 
-            logs::log(INFO, "Found device |" + *dev + "| in path: " + hwmonPath);
+            logs::log(INFO, "Found device |{}| in path: {}\n", *dev, hwmonPath);
 
             /* Remove device of the search list */
             searchList.erase(dev);
@@ -50,13 +49,13 @@ void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, s
     }
 }
 
-void CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
+int32_t CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
     const std::string        targetName = "uevent";
     std::vector<std::string> list       = std::move(searchList);
 
     if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
-        logs::log(ERR, "Base path provided is not valid!");
-        logs::log(ERR, "Terminating...");
+        logs::log(ERR, "Base path provided is not valid!\n");
+        logs::log(ERR, "Terminating...\n");
 
         exit(1);
     }
@@ -81,15 +80,14 @@ void CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
             }
         }
     } catch (std::exception& e) {
-        std::stringstream ss;
-        ss << "Exception occurred: " << e.what() << "\n";
-        logs::log(ERR, ss.str());
-
-        return;
+        logs::log(ERR, "Exception occured: {}\n", e.what());
+        return -1;
     }
 
     for (const auto& unreg : searchList)
-        logs::log(WARN, "Could not register device: " + std::string(unreg));
+        logs::log(WARN, "Could not register device: {}\n", std::string(unreg));
+
+    return 0;
 }
 
 void CSensorManager::readTrackedSensors(void) {
@@ -98,8 +96,6 @@ void CSensorManager::readTrackedSensors(void) {
             std::optional<double> read = sensorPair.second->read(TEMP);
 
             if (read) {
-                logs::logSensorData(sensorPair.first, TEMP, *read);
-
                 SSensorReading r{
                     .sensorName      = sensorPair.first,
                     .sensorType      = TO_STRINGZ(TMP112),
@@ -126,13 +122,13 @@ void CSensorManager::runManager(void) {
     }
 }
 
-void CSensorManager::registerSingleSensor(const std::string& sensorName) {
+int32_t CSensorManager::registerSingleSensor(const std::string& sensorName) {
     const std::string        targetName = "uevent";
     std::vector<std::string> list{sensorName};
 
     if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
-        logs::log(ERR, "Base path provided is not valid!");
-        logs::log(ERR, "Terminating...");
+        logs::log(ERR, "Base path provided is not valid!\n");
+        logs::log(ERR, "Terminating...\n");
 
         exit(1);
     }
@@ -157,40 +153,43 @@ void CSensorManager::registerSingleSensor(const std::string& sensorName) {
             }
         }
     } catch (std::exception& e) {
-        std::stringstream ss;
-        ss << "Exception occurred: " << e.what() << "\n";
-        logs::log(ERR, ss.str());
-
-        return;
+        logs::log(ERR, "Exception occured: {}\n", e.what());
+        return -1;
     }
 
-    for (const auto& unreg : list)
-        logs::log(WARN, "Could not register device: " + std::string(unreg));
+    for (const auto& unreg : list) {
+        logs::log(WARN, "Could not register device: {}\n", std::string(unreg));
+        return -1;
+    }
+
+    return 0;
 }
 
-void CSensorManager::trackRegisteredDevices(void) {
-    logs::log(INFO, "Start tracking register devices...");
+int32_t CSensorManager::trackRegisteredDevices(void) {
+    logs::log(INFO, "Start tracking register devices...\n");
 
     for (const auto& pair : m_mSensorMap)
         m_vTrackingSensors.push_back(pair);
+
+    return 0;
 }
 
 int32_t CSensorManager::startTracking(std::string& sensorName) {
     auto found = m_mSensorMap.find(sensorName);
 
     if (found == m_mSensorMap.end()) {
-        logs::log(WARN, "Device was not properly registered! Can't track it!");
+        logs::log(WARN, "Device was not properly registered! Can't track it!\n");
         return -1;
     }
 
     for (auto it = m_vTrackingSensors.begin(); it != m_vTrackingSensors.end(); ++it) {
         if (it->first == found->first) {
-            logs::log(WARN, "Device is already being tracked!!!");
+            logs::log(WARN, "Device is already being tracked!!!\n");
             return -1;
         }
     }
 
-    logs::log(INFO, "Now tracking |" + sensorName + "| sensor");
+    logs::log(INFO, "Now tracking |{}| sensor\n", sensorName);
 
     std::lock_guard<std::mutex> lock{this->m_lock};
 
@@ -199,12 +198,15 @@ int32_t CSensorManager::startTracking(std::string& sensorName) {
     return 0;
 }
 
-void CSensorManager::unregisterSingleSensor(const std::string& sensorName) {
+int32_t CSensorManager::unregisterSingleSensor(const std::string& sensorName) {
     auto found = m_mSensorMap.erase(sensorName);
 
     if (found == 0) {
-        logs::log(ERR, "Sensor requested was not registered previously!");
+        logs::log(ERR, "Sensor requested was not registered previously!\n");
+        return -1;
     }
+
+    return 0;
 }
 
 int32_t CSensorManager::stopTracking(std::string& sensorName) {
@@ -213,7 +215,7 @@ int32_t CSensorManager::stopTracking(std::string& sensorName) {
     auto                        deleted = std::remove_if(m_vTrackingSensors.begin(), m_vTrackingSensors.end(), [sensorName](sensorPair p) { return p.first == sensorName; });
 
     if (deleted == m_vTrackingSensors.end()) {
-        logs::log(ERR, "Sensor requested was not being tracked!");
+        logs::log(ERR, "Sensor requested was not being tracked!\n");
         return -1;
     }
 
@@ -222,10 +224,12 @@ int32_t CSensorManager::stopTracking(std::string& sensorName) {
     return 0;
 }
 
-void CSensorManager::setMeasurementPeriod(uint64_t period_ms) {
+int32_t CSensorManager::setMeasurementPeriod(uint64_t period_ms) {
     std::lock_guard<std::mutex> lock{this->m_lock};
 
     m_MeasurementPeriodMS = period_ms;
+
+    return 0;
 }
 
 void CSensorManager::readAllInaTypes(const std::pair<std::string, std::shared_ptr<CSensor> >& ina) {
@@ -235,8 +239,6 @@ void CSensorManager::readAllInaTypes(const std::pair<std::string, std::shared_pt
         std::optional<double> value = ina.second->read(type);
 
         if (value) {
-            logs::logSensorData(ina.first, type, *value);
-
             SSensorReading r{
                 .sensorName      = ina.first,
                 .sensorType      = TO_STRINGZ(INA219),

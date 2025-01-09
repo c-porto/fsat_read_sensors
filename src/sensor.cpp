@@ -14,8 +14,7 @@ static std::optional<int32_t> readDriverFile(const std::string& file) {
     ifs.open(file, std::ios::in);
 
     if (!ifs.is_open()) {
-        const std::string errMsg = "Could not open : " + file;
-        logs::log(ERR, errMsg);
+        logs::log(ERR, "Could not open: {}\n", file);
         return {};
     }
 
@@ -26,7 +25,7 @@ static std::optional<int32_t> readDriverFile(const std::string& file) {
     try {
         rawValue = std::stoi(reading);
     } catch (std::exception& e) {
-        logs::log(ERR, "Could not parse file reading");
+        logs::log(ERR, "Could not parse file reading! Exception: {}\n", e.what());
         return {};
     }
 
@@ -61,20 +60,20 @@ std::optional<double> CSensor::read(const eMeasureType type) const {
             ic = INA219;
             break;
         default:
-            logs::log(ERR, "Invalid option for reading. Please check the options again");
-            logs::log(ERR, "Terminating...");
+            logs::log(ERR, "Invalid option for reading. Please check the options again\n");
+            logs::log(ERR, "Terminating...\n");
             exit(1);
     }
 
     if (ic != m_eIC) {
-        logs::log(ERR, "Invalid option for selected sensor");
+        logs::log(ERR, "Invalid option for selected sensor\n");
         return {};
     }
 
     rawValue = readDriverFile(readPath);
 
     if (!rawValue) {
-        logs::log(ERR, "Could not read the driver file");
+        logs::log(ERR, "Could not read the driver file\n");
         return {};
     }
 

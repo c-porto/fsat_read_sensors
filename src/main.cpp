@@ -24,8 +24,6 @@ std::vector<std::string> devs = {"main-radio-power", "tmp102", "obdh-power", "be
 
 int main(int argc, char** argv) {
     logs::init(LOG_DIR);
-    logs::disableSensorStdOut = true;
-    logs::disableTime = true;
 
     std::shared_ptr<CSensorManager> man = std::make_shared<CSensorManager>(BASE_PATH, DB_PATH);
 

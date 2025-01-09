@@ -8,12 +8,11 @@ ExecStart=/usr/bin/read_sensors
 Restart=always
 RestartSec=5
 RestartPreventExitStatus=42
-StandardInput=socket
-StandardOutput=journal
 StandardError=journal
 ExecStop=/bin/kill -s SIGTERM $MAINPID
 ExecReload=/bin/kill -s SIGHUP $MAINPID
 KillSignal=SIGTERM
+Sockets=read-sensors.socket
 
 [Install]
 WantedBy=multi-user.target
