@@ -33,6 +33,7 @@ sources = files(
   'src/sensor-manager.hpp',
   'src/sensor.cpp',
   'src/sensor.hpp',
+  'src/parser.hpp',
 )
 
 rs_dependencies = []
