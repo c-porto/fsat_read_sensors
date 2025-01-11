@@ -1,7 +1,6 @@
 #ifndef LOG_HPP_
 #define LOG_HPP_
 
-#include <chrono>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -23,7 +22,6 @@ namespace logs {
     inline std::string          logFile;
     inline std::string          dataFile;
     inline bool                 disableJournal       = false;
-    inline bool                 disableTime          = true;
     inline bool                 disableStdOut        = true;
     inline bool                 disableSensorStdOut  = true;
     inline bool                 disableSensorFileLog = true;
@@ -50,17 +48,6 @@ namespace logs {
         }
 
         va_end(args);
-
-        if (!disableTime) {
-            auto    now        = std::chrono::system_clock::now();
-            auto    time_t_now = std::chrono::system_clock::to_time_t(now);
-            std::tm utc_tm;
-            gmtime_r(&time_t_now, &utc_tm);
-            std::ostringstream oss;
-            oss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%SZ");
-
-            logMsg += "[" + oss.str() + "]";
-        }
 
         logMsg += allocFmt;
 
