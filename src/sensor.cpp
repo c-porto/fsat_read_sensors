@@ -14,7 +14,7 @@ static std::optional<int32_t> readDriverFile(const std::string& file) {
     ifs.open(file, std::ios::in);
 
     if (!ifs.is_open()) {
-        logs::log(ERR, "Could not open: {}\n", file);
+        logs::log(ERR, "Could not open: %s\n", file.c_str());
         return {};
     }
 
@@ -25,7 +25,7 @@ static std::optional<int32_t> readDriverFile(const std::string& file) {
     try {
         rawValue = std::stoi(reading);
     } catch (std::exception& e) {
-        logs::log(ERR, "Could not parse file reading! Exception: {}\n", e.what());
+        logs::log(ERR, "Could not parse file reading! Exception: %s\n", e.what());
         return {};
     }
 

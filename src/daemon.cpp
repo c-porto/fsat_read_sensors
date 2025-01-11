@@ -118,9 +118,9 @@ std::string CDaemon::parseCommand(void* packet, size_t size) {
     }
 
     if (err == 0)
-        response = std::format("Command `{}` was executed sucessfully!", cmdToString(cmd));
+        response = "Command `" + std::string{cmdToString(cmd)} + "` was executed sucessfully!";
     else
-        response = std::format("Command `{}` failed in execution! Check the service journal entries to obtain more information.", cmdToString(cmd));
+        response = "Command `" + std::string{cmdToString(cmd)} + "` failed in execution! Check the service journal entries to obtain more information.";
 
     return response;
 }

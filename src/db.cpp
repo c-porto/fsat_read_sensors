@@ -8,7 +8,7 @@ std::int8_t CSqliteDb::createSqliteDB(void) {
     int32_t rq = sqlite3_open(dbPath_.c_str(), &dbHandle_);
 
     if (rq) {
-        logs::log(ERR, "Failed to create/open database!! Error: {}\n", sqlite3_errmsg(dbHandle_));
+        logs::log(ERR, "Failed to create/open database!! Error: %s\n", sqlite3_errmsg(dbHandle_));
         sqlite3_close(dbHandle_);
         return -1;
     }

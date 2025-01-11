@@ -3,10 +3,11 @@
 
 #include <chrono>
 #include <cmath>
-#include <iomanip>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 #include <mutex>
 #include <string>
-#include <format>
 
 #include "sensor.hpp"
 
@@ -34,18 +35,36 @@ namespace logs {
 
     void                        logSensorData(std::string sensorName, eMeasureType type, double data);
 
-    template <typename... Args>
-    void log(const LogLevel level, std::format_string<Args...> fmt, Args&&... args) {
+    inline void                 log(const LogLevel level, const char* fmt, ...) {
         std::lock_guard<std::recursive_mutex> guard{logMutex};
-        std::string                 logMsg = "";
+        std::string                           logMsg = "";
+        char*                                 allocFmt;
+        va_list                               args;
 
-        if (!disableTime) {
-            auto        now       = std::chrono::system_clock::now();
-            std::string timestamp = std::format("{:%FT%T}Z", now);
-            logMsg += std::format("[{}]", timestamp);
+        va_start(args, fmt);
+
+        if (vasprintf(&allocFmt, fmt, args) < 0) {
+            log(ERR, "Failed to allocated log string!!");
+            va_end(args);
+            return;
         }
 
-        logMsg += std::vformat(fmt.get(), std::make_format_args(args...));
+        va_end(args);
+
+        if (!disableTime) {
+            auto    now        = std::chrono::system_clock::now();
+            auto    time_t_now = std::chrono::system_clock::to_time_t(now);
+            std::tm utc_tm;
+            gmtime_r(&time_t_now, &utc_tm);
+            std::ostringstream oss;
+            oss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%SZ");
+
+            logMsg += "[" + oss.str() + "]";
+        }
+
+        logMsg += allocFmt;
+
+        free(allocFmt);
 
         log(level, logMsg);
     }

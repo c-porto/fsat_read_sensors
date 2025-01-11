@@ -39,7 +39,7 @@ void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, s
             /* Save path+dev pair on the internal map */
             m_mSensorMap.insert(pair);
 
-            logs::log(INFO, "Found device |{}| in path: {}\n", *dev, hwmonPath);
+            logs::log(INFO, "Found device |%s| in path: %s\n", dev->c_str(), hwmonPath.c_str());
 
             /* Remove device of the search list */
             searchList.erase(dev);
@@ -80,12 +80,12 @@ int32_t CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
             }
         }
     } catch (std::exception& e) {
-        logs::log(ERR, "Exception occured: {}\n", e.what());
+        logs::log(ERR, "Exception occured: %s\n", e.what());
         return -1;
     }
 
     for (const auto& unreg : searchList)
-        logs::log(WARN, "Could not register device: {}\n", std::string(unreg));
+        logs::log(WARN, "Could not register device: %s\n", unreg.c_str());
 
     return 0;
 }
@@ -153,12 +153,12 @@ int32_t CSensorManager::registerSingleSensor(const std::string& sensorName) {
             }
         }
     } catch (std::exception& e) {
-        logs::log(ERR, "Exception occured: {}\n", e.what());
+        logs::log(ERR, "Exception occured: %s\n", e.what());
         return -1;
     }
 
     for (const auto& unreg : list) {
-        logs::log(WARN, "Could not register device: {}\n", std::string(unreg));
+        logs::log(WARN, "Could not register device: %s\n", unreg.c_str());
         return -1;
     }
 
@@ -189,7 +189,7 @@ int32_t CSensorManager::startTracking(std::string& sensorName) {
         }
     }
 
-    logs::log(INFO, "Now tracking |{}| sensor\n", sensorName);
+    logs::log(INFO, "Now tracking |%s| sensor\n", sensorName.c_str());
 
     std::lock_guard<std::mutex> lock{this->m_lock};
 
