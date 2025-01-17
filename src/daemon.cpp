@@ -109,7 +109,7 @@ std::string CDaemon::parseCommand(void* packet, size_t size) {
         case CMD_SET_MEASUREMENT_PERIOD: {
             logs::log(INFO, "Set measurement period command received.\n");
 
-            logs::log(INFO, "New period: {} ms.\n", *pkt.measPeriod);
+            logs::log(INFO, "New period: %lu ms.\n", *pkt.measPeriod);
 
             err = m_pManager->setMeasurementPeriod(*pkt.measPeriod);
             break;
