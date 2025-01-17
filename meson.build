@@ -1,7 +1,7 @@
 project(
   'read-sensors',
   'cpp',
-  version: '0.2.1',
+  version: '0.2.2',
   default_options: [
     'warning_level=3',
     'cpp_std=c++20',
@@ -29,11 +29,11 @@ sources = files(
   'src/log.cpp',
   'src/log.hpp',
   'src/main.cpp',
+  'src/parser.hpp',
   'src/sensor-manager.cpp',
   'src/sensor-manager.hpp',
   'src/sensor.cpp',
   'src/sensor.hpp',
-  'src/parser.hpp',
 )
 
 rs_dependencies = []
@@ -44,10 +44,13 @@ sqlite3_dep = dependency('sqlite3')
 
 libsystemd = dependency('libsystemd')
 
+libiio = dependency('libiio')
+
 rs_dependencies += sqlite3_dep
 rs_dependencies += libsystemd
+rs_dependencies += libiio
 
-binary = executable('read_sensors', sources, dependencies: rs_dependencies, install: true)
+read_sensors = executable('read_sensors', sources, dependencies: rs_dependencies, install: true)
 
 install_data(
   'services/read-sensors.service',
