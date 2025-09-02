@@ -100,7 +100,7 @@ int32_t SensorManager::stopTracking(std::string &sensorName)
 	return 0;
 }
 
-void logMeasurement(sensor::SensorDataEntry const &meas)
+void SensorManager::logMeasurement(sensor::SensorDataEntry const &meas)
 {
 	logs::log(DEBUG, "Measurement of type [%s] from %s [%s] was %f\n",
 		  meas.measurementType.c_str(), meas.sensorName.c_str(), meas.sensorType.c_str(),
