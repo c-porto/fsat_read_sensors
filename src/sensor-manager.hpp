@@ -22,7 +22,7 @@ class SensorManager {
 	{
 		ctx_ = iio_create_default_context();
 
-		if (ctx_) {
+		if (!ctx_) {
 			logs::log(ERR, "Failed to create default IIO context!!\n");
 			throw std::runtime_error("iio ctx");
 		}
