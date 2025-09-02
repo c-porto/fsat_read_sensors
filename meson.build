@@ -1,7 +1,7 @@
 project(
   'read-sensors',
   'cpp',
-  version: '0.2.2',
+  version: '0.3.0',
   default_options: [
     'warning_level=3',
     'cpp_std=c++20',
@@ -32,8 +32,11 @@ sources = files(
   'src/parser.hpp',
   'src/sensor-manager.cpp',
   'src/sensor-manager.hpp',
-  'src/sensor.cpp',
   'src/sensor.hpp',
+  'src/ina219.hpp',
+  'src/ina219.cpp',
+  'src/tmp112.hpp',
+  'src/tmp112.cpp',
 )
 
 rs_dependencies = []
@@ -46,9 +49,12 @@ libsystemd = dependency('libsystemd')
 
 libiio = dependency('libiio')
 
+nlohmann_json = dependency('nlohmann_json')
+
 rs_dependencies += sqlite3_dep
 rs_dependencies += libsystemd
 rs_dependencies += libiio
+rs_dependencies += nlohmann_json
 
 read_sensors = executable('read_sensors', sources, dependencies: rs_dependencies, install: true)
 

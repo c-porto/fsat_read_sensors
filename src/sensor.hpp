@@ -3,35 +3,32 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
-enum eMeasureType {
-    TEMP,
-    CURRENT,
-    SHUNT_VOLT,
-    BUS_VOLT,
-    POWER,
+namespace sensor
+{
+inline std::string measureTypes[] = { "temp", "current", "shunt_voltage", "voltage", "power" };
+
+struct SensorDataEntry {
+	std::string sensorName;
+	std::string sensorType;
+	std::string measurementType;
+	double value;
 };
 
-enum eSensorType : int32_t {
-    INA219 = 0,
-    TMP112,
-};
+class Sensor {
+    public:
+	virtual ~Sensor() = default;
+	virtual std::optional<SensorDataEntry> read(std::string const &sensorType) = 0;
+	std::vector<std::string> supported_types_;
+	std::string getName() const
+	{
+		return name_;
+	}
 
-struct SSensorReading {
-    std::string sensorName;
-    std::string sensorType;
-    std::string measurementType;
-    double      value;
+    protected:
+	std::string name_;
 };
-
-class CSensor {
-  public:
-    CSensor(std::string path, eSensorType sensor_type) : m_eIC{sensor_type}, m_szDriverFile{path} {}
-    std::optional<double> read(const eMeasureType type) const;
-    const eSensorType     m_eIC;
-
-  private:
-    const std::string m_szDriverFile;
-};
+}
 
 #endif

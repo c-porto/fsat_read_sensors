@@ -41,18 +41,20 @@ void logs::log(const LogLevel level, std::string str) {
             coloredStr = "\033[1;32m" + str + "\033[0m"; // green
             sysLog     = LOG_INFO;
             break;
+        case DEBUG:
+            out        = "[DEBUG] " + str;
+            coloredStr = "\033[1;34m" + str + "\033[0m"; // blue
+            sysLog     = LOG_DEBUG;
+            break;
         default: break;
     }
 
-    if (!disableStdOut) {
+    if (!disableFileLogs) {
         std::ofstream ofs;
         ofs.open(logFile, std::ios::out | std::ios::app);
         ofs << out << "\n";
         ofs.close();
     }
-
-    if (!disableStdOut)
-        std::cout << ((!coloredLogs) ? out : coloredStr) << std::endl;
 
     if (!disableJournal)
         sd_journal_print(sysLog, "%s", str.c_str());
