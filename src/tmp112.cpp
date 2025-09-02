@@ -20,7 +20,7 @@ Tmp112::Tmp112(struct iio_context *ctx, std::string name)
 	dev_ = iio_context_find_device(ctx_, name.c_str());
 
 	if (dev_ == nullptr) {
-		logs::log(ERR, "Failed to find device in context!\n");
+		logs::log(ERR, "Failed to find device [%s] in context!\n", name.c_str());
 		throw std::runtime_error("find iio device!");
 	}
 
