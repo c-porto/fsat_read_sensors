@@ -17,10 +17,10 @@ Ina219::Ina219(struct iio_context *ctx, std::string name)
 	if (ctx_ == nullptr)
 		throw std::runtime_error("context is null!");
 
-	dev_ = iio_context_find_device(ctx_, name.c_str());
+	dev_ = iio_context_find_device(ctx_, name_.c_str());
 
 	if (dev_ == nullptr) {
-		logs::log(ERR, "Failed to find device [%s] in context!\n", name.c_str());
+		logs::log(ERR, "Failed to find device [%s] in context!\n", name_.c_str());
 		throw std::runtime_error("find iio device!");
 	}
 
