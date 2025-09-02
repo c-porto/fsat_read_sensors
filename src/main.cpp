@@ -3,32 +3,17 @@
 #include "log.hpp"
 #include "sensor-manager.hpp"
 #include "daemon.hpp"
-#include <vector>
 
-#define DEBUG 0
+#define LOG_DIR "/var/log/fsat/"
+#define DB_PATH "/var/local/read-sensors.sqlite3"
 
-#if DEBUG == 1
-#warning Debug flag is enabled, make sure to provide a mockup for the drivers filesystem and place its absolute path at the "TEST_FS_PATH" macro on main.cpp
-#define TEST_FS_PATH ""
+int main(int argc, char **argv)
+{
+	logs::init(LOG_DIR);
 
-#define BASE_PATH (TEST_FS_PATH "/sys/class/hwmon/")
-#define LOG_DIR   (TEST_FS_PATH "/var/log/fsat/")
-#define DB_PATH   (TEST_FS_PATH "/var/local/read-sensors.db")
-#else
-#define BASE_PATH "/sys/class/hwmon/"
-#define LOG_DIR   "/var/log/fsat/"
-#define DB_PATH   "/var/local/read-sensors.db"
-#endif
+	std::shared_ptr<SensorManager> man = std::make_shared<SensorManager>(DB_PATH);
 
-std::vector<std::string> devs = {"main-radio-power", "tmp102", "obdh-power", "beacon-power", "edc-power", "beacon2-power", "antenna-power", "payload-power"};
+	Daemon daemon{ man };
 
-int main(int argc, char** argv) {
-    logs::init(LOG_DIR);
-
-    std::shared_ptr<CSensorManager> man = std::make_shared<CSensorManager>(BASE_PATH, DB_PATH);
-
-    CDaemon daemon{man};
-
-    man->registerSensors(std::move(devs));
-    man->runManager();
+	man->runManager();
 }

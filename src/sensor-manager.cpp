@@ -1,252 +1,117 @@
 #include "sensor-manager.hpp"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <exception>
-#include <filesystem>
-#include <fstream>
-#include <ios>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>
-#include <utility>
 #include <vector>
 
 #include "log.hpp"
 #include "sensor.hpp"
 
-namespace fs = std::filesystem;
+void SensorManager::readTrackedSensors(void)
+{
+	for (const auto &sensor : tracking_sensors_) {
+		for (const auto &meas_type : sensor->supported_types_) {
+			std::optional<sensor::SensorDataEntry> read = sensor->read(meas_type);
 
-void CSensorManager::matchForDeviceNames(std::vector<std::string>& searchList, std::string name, fs::path it) {
-    for (auto dev = searchList.begin(); dev != searchList.end(); ++dev) {
-        if (*dev == name) {
-            std::string hwmonPath = it.parent_path();
-
-            auto        sensor = std::make_shared<CSensor>(hwmonPath, (name == std::string("tmp102")) ? TMP112 : INA219);
-            auto        pair   = std::make_pair(name, sensor);
-
-            for (auto it = m_mSensorMap.begin(); it != m_mSensorMap.end(); ++it) {
-                if (it->first == name) {
-                    logs::log(WARN, "Device is already registered!!!\n");
-                    return;
-                }
-            }
-
-            /* Save path+dev pair on the internal map */
-            m_mSensorMap.insert(pair);
-
-            logs::log(INFO, "Found device |%s| in path: %s\n", dev->c_str(), hwmonPath.c_str());
-
-            /* Remove device of the search list */
-            searchList.erase(dev);
-
-            return;
-        }
-    }
+			if (read) {
+				db_.addMeasurementToDB(*read);
+				this->logMeasurement(*read);
+			}
+		}
+	}
 }
 
-int32_t CSensorManager::registerSensors(std::vector<std::string>&& searchList) {
-    const std::string        targetName = "uevent";
-    std::vector<std::string> list       = std::move(searchList);
+void SensorManager::runManager(void)
+{
+	while (true) {
+		if (!tracking_sensors_.empty()) {
+			this->readTrackedSensors();
+		}
 
-    if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
-        logs::log(ERR, "Base path provided is not valid!\n");
-        logs::log(ERR, "Terminating...\n");
-
-        exit(1);
-    }
-
-    try {
-        for (const auto& file : fs::directory_iterator(m_szBaseHwmonPath, fs::directory_options::follow_directory_symlink)) {
-            fs::path ufile = file.path() / targetName;
-            if (fs::exists(ufile)) {
-                std::ifstream ifs;
-                std::string   deviceName;
-                std::string   input;
-
-                ifs.open(ufile, std::ios::in);
-                std::getline(ifs, input);
-
-                if (input.rfind("OF_NAME=", 0) == 0)
-                    deviceName = input.substr(strlen("OF_NAME="));
-                else
-                    continue;
-
-                this->matchForDeviceNames(list, deviceName, ufile);
-            }
-        }
-    } catch (std::exception& e) {
-        logs::log(ERR, "Exception occured: %s\n", e.what());
-        return -1;
-    }
-
-    for (const auto& unreg : searchList)
-        logs::log(WARN, "Could not register device: %s\n", unreg.c_str());
-
-    return 0;
+		std::this_thread::sleep_for(std::chrono::milliseconds(meas_period_ms_));
+	}
 }
 
-void CSensorManager::readTrackedSensors(void) {
-    for (const auto& sensorPair : m_vTrackingSensors) {
-        if (sensorPair.second->m_eIC == TMP112) {
-            std::optional<double> read = sensorPair.second->read(TEMP);
+int32_t SensorManager::trackRegisteredDevices(void)
+{
+	logs::log(INFO, "Start tracking register devices...\n");
 
-            if (read) {
-                SSensorReading r{
-                    .sensorName      = sensorPair.first,
-                    .sensorType      = TO_STRINGZ(TMP112),
-                    .measurementType = TO_STRINGZ(TEMP),
-                    .value           = *read,
-                };
+	for (const auto &sensor : registered_sensors_)
+		tracking_sensors_.push_back(sensor);
 
-                m_DB.addMeasurementToDB(r);
-            }
-
-        } else {
-            readAllInaTypes(sensorPair);
-        }
-    }
+	return 0;
 }
 
-void CSensorManager::runManager(void) {
-    while (true) {
-        if (!m_vTrackingSensors.empty()) {
-            this->readTrackedSensors();
-        }
+int32_t SensorManager::startTracking(std::string &sensorName)
+{
+	bool is_registered = false;
+	std::shared_ptr<sensor::Sensor> found = nullptr;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_MeasurementPeriodMS));
-    }
+	for (const auto &sensor : registered_sensors_) {
+		if (sensor->getName() == sensorName) {
+			is_registered = true;
+			found = sensor;
+			break;
+		}
+	}
+
+	if (!is_registered) {
+		logs::log(WARN, "Device was not properly registered! Can't track it!\n");
+		return -1;
+	}
+
+	for (const auto &sensor : tracking_sensors_) {
+		if (sensor->getName() == sensorName) {
+			logs::log(WARN, "Device is already being tracked!!!\n");
+			return -1;
+		}
+	}
+
+	logs::log(INFO, "Now tracking |%s| sensor\n", sensorName.c_str());
+
+	std::lock_guard<std::mutex> lock{ this->lock_ };
+
+	tracking_sensors_.push_back(found);
+
+	return 0;
 }
 
-int32_t CSensorManager::registerSingleSensor(const std::string& sensorName) {
-    const std::string        targetName = "uevent";
-    std::vector<std::string> list{sensorName};
+int32_t SensorManager::stopTracking(std::string &sensorName)
+{
+	std::lock_guard<std::mutex> lock{ this->lock_ };
 
-    if (!fs::exists(m_szBaseHwmonPath) || !fs::is_directory(m_szBaseHwmonPath)) {
-        logs::log(ERR, "Base path provided is not valid!\n");
-        logs::log(ERR, "Terminating...\n");
+	auto deleted = std::remove_if(tracking_sensors_.begin(), tracking_sensors_.end(),
+				      [sensorName](std::shared_ptr<sensor::Sensor> p) {
+					      return p->getName() == sensorName;
+				      });
 
-        exit(1);
-    }
+	if (deleted == tracking_sensors_.end()) {
+		logs::log(ERR, "Sensor requested was not being tracked!\n");
+		return -1;
+	}
 
-    try {
-        for (const auto& file : fs::directory_iterator(m_szBaseHwmonPath, fs::directory_options::follow_directory_symlink)) {
-            fs::path ufile = file.path() / targetName;
-            if (fs::exists(ufile)) {
-                std::ifstream ifs;
-                std::string   deviceName;
-                std::string   input;
+	tracking_sensors_.erase(deleted, tracking_sensors_.end());
 
-                ifs.open(ufile, std::ios::in);
-                std::getline(ifs, input);
-
-                if (input.rfind("OF_NAME=", 0) == 0)
-                    deviceName = input.substr(strlen("OF_NAME="));
-                else
-                    continue;
-
-                this->matchForDeviceNames(list, deviceName, ufile);
-            }
-        }
-    } catch (std::exception& e) {
-        logs::log(ERR, "Exception occured: %s\n", e.what());
-        return -1;
-    }
-
-    for (const auto& unreg : list) {
-        logs::log(WARN, "Could not register device: %s\n", unreg.c_str());
-        return -1;
-    }
-
-    return 0;
+	return 0;
 }
 
-int32_t CSensorManager::trackRegisteredDevices(void) {
-    logs::log(INFO, "Start tracking register devices...\n");
-
-    for (const auto& pair : m_mSensorMap)
-        m_vTrackingSensors.push_back(pair);
-
-    return 0;
+void logMeasurement(sensor::SensorDataEntry const &meas)
+{
+	logs::log(DEBUG, "Measurement of type [%s] from %s [%s] was %f\n",
+		  meas.measurementType.c_str(), meas.sensorName.c_str(), meas.sensorType.c_str(),
+		  meas.value);
 }
 
-int32_t CSensorManager::startTracking(std::string& sensorName) {
-    auto found = m_mSensorMap.find(sensorName);
+int32_t SensorManager::setMeasurementPeriod(uint64_t period_ms)
+{
+	std::lock_guard<std::mutex> lock{ this->lock_ };
 
-    if (found == m_mSensorMap.end()) {
-        logs::log(WARN, "Device was not properly registered! Can't track it!\n");
-        return -1;
-    }
+	meas_period_ms_ = period_ms;
 
-    for (auto it = m_vTrackingSensors.begin(); it != m_vTrackingSensors.end(); ++it) {
-        if (it->first == found->first) {
-            logs::log(WARN, "Device is already being tracked!!!\n");
-            return -1;
-        }
-    }
-
-    logs::log(INFO, "Now tracking |%s| sensor\n", sensorName.c_str());
-
-    std::lock_guard<std::mutex> lock{this->m_lock};
-
-    m_vTrackingSensors.push_back(*found);
-
-    return 0;
-}
-
-int32_t CSensorManager::unregisterSingleSensor(const std::string& sensorName) {
-    auto found = m_mSensorMap.erase(sensorName);
-
-    if (found == 0) {
-        logs::log(ERR, "Sensor requested was not registered previously!\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-int32_t CSensorManager::stopTracking(std::string& sensorName) {
-    std::lock_guard<std::mutex> lock{this->m_lock};
-
-    auto                        deleted = std::remove_if(m_vTrackingSensors.begin(), m_vTrackingSensors.end(), [sensorName](sensorPair p) { return p.first == sensorName; });
-
-    if (deleted == m_vTrackingSensors.end()) {
-        logs::log(ERR, "Sensor requested was not being tracked!\n");
-        return -1;
-    }
-
-    m_vTrackingSensors.erase(deleted, m_vTrackingSensors.end());
-
-    return 0;
-}
-
-int32_t CSensorManager::setMeasurementPeriod(uint64_t period_ms) {
-    std::lock_guard<std::mutex> lock{this->m_lock};
-
-    m_MeasurementPeriodMS = period_ms;
-
-    return 0;
-}
-
-void CSensorManager::readAllInaTypes(const std::pair<std::string, std::shared_ptr<CSensor> >& ina) {
-    const std::array<eMeasureType, 4> types = {BUS_VOLT, SHUNT_VOLT, CURRENT, POWER};
-
-    for (const auto& type : types) {
-        std::optional<double> value = ina.second->read(type);
-
-        if (value) {
-            SSensorReading r{
-                .sensorName      = ina.first,
-                .sensorType      = TO_STRINGZ(INA219),
-                .measurementType = meas_type_to_str(type),
-                .value           = *value,
-            };
-
-            m_DB.addMeasurementToDB(r);
-        }
-    }
+	return 0;
 }
