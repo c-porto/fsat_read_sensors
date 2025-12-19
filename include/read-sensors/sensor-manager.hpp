@@ -146,7 +146,7 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
   std::shared_ptr<fsatutils::iio::Context> ctx_;
   SqliteDb db_;
   std::unique_ptr<SensorFactory> factory_;
-  uint64_t meas_period_ms_{60000ULL};
+  uint64_t meas_period_ms_{10000ULL};
 };
 
 #endif
