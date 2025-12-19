@@ -307,17 +307,17 @@ bool Service::impl::connectToEngineProxy() {
     return false;
   }
 
-  std::string xsub = "tcp://*:" + std::to_string(ZMQ_FLATSAT_ENGINE_XSUB_PORT);
+  const char* xsub = "tcp://*:2808";
 
-  if (zmq_connect(engine_.pub, xsub.c_str()) != 0) {
+  if (zmq_connect(engine_.pub, xsub) != 0) {
     logs::log(ERR, "Failed to connect to engine xsub!\n");
     zmq_ctx_term(engine_.ctx);
     return false;
   }
 
-  std::string xpub = "tcp://*:" + std::to_string(ZMQ_FLATSAT_ENGINE_XPUB_PORT);
+  const char* xpub = "tcp://*:2809";
 
-  if (zmq_connect(engine_.sub, xpub.c_str()) != 0) {
+  if (zmq_connect(engine_.sub, xpub) != 0) {
     logs::log(ERR, "Failed to connect to engine xpub!\n");
     zmq_close(engine_.pub);
     zmq_ctx_term(engine_.ctx);
