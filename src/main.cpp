@@ -51,11 +51,22 @@ int main(int argc, char** argv) {
       .preferedProtocol = static_cast<std::uint8_t>(zmq::MessageProtocol::JSON),
   };
 
-  zmq::Service service{desc};
+  std::unique_ptr<zmq::Service> service;
 
-  for (auto const& cmd : manager_cmds) {
-    service.registerCommand(cmd.cmd, cmd.args, &SensorManager::commandHandler,
-                            static_cast<void*>(man.get()));
+  try {
+    service = std::make_unique<zmq::Service>(desc);
+  } catch (std::runtime_error const& e) {
+    logs::log(ERR, "Failed to create ZMQ service: [%s]!\n", e.what());
+  }
+
+  if (service != nullptr) {
+    for (auto const& cmd : manager_cmds) {
+      service->registerCommand(cmd.cmd, cmd.args,
+                               &SensorManager::commandHandler,
+                               static_cast<void*>(man.get()));
+    }
+
+    service->runService();
   }
 
   man->trackRegisteredDevices();
