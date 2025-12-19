@@ -28,7 +28,6 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
     try {
       raw = channel->read_attr<long long>("raw");
       scale = channel->read_attr<double>("scale");
-      offset = channel->read_attr<long long>("offset");
     } catch (std::runtime_error const& e) {
       logs::log(ERR, "Failed to read channel [%s]!\n", channel->name().c_str());
       continue;
@@ -39,14 +38,27 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
                   static_cast<double>(offset);
 
     if (channel->name() == "temp0") {
+      try {
+        offset = channel->read_attr<long long>("offset");
+      } catch (std::runtime_error const& e) {
+        logs::log(ERR, "Failed to read channel [%s]!\n",
+                  channel->name().c_str());
+        continue;
+      }
+
+      read += static_cast<double>(offset);
+
       read /= 1000.0;
+
       sensor::SensorDataEntry entry{
           .sensorName = name_,
           .sensorType = channel->name(),
           .measurementType = "temperature",
           .value = read,
       };
+
       readings.push_back(entry);
+
     } else {
       sensor::SensorDataEntry entry{
           .sensorName = name_,
@@ -54,6 +66,7 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
           .measurementType = "voltage",
           .value = read,
       };
+
       readings.push_back(entry);
     }
   }
