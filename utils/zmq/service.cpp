@@ -325,7 +325,7 @@ bool Service::impl::connectToEngineProxy() {
   }
 
   if (zmq_setsockopt(engine_.sub, ZMQ_SUBSCRIBE, desc_.name.c_str(),
-                     desc_.name.size()) == 0) {
+                     desc_.name.size()) != 0) {
     logs::log(ERR, "Failed to subscribe to service name!\n");
     zmq_close(engine_.sub);
     zmq_close(engine_.pub);
@@ -333,7 +333,7 @@ bool Service::impl::connectToEngineProxy() {
     return false;
   }
 
-  if (zmq_setsockopt(engine_.sub, ZMQ_SUBSCRIBE, g_discoverTopic.data(), 4U) ==
+  if (zmq_setsockopt(engine_.sub, ZMQ_SUBSCRIBE, g_discoverTopic.data(), 4U) !=
       0) {
     logs::log(ERR, "Failed to subscribe to discover command!\n");
     zmq_close(engine_.sub);
