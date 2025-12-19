@@ -36,7 +36,6 @@
 **/test
 **/builddir
 **/build
-**/log
 *.sh
 
 compile_commands.json
