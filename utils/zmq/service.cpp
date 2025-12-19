@@ -308,7 +308,7 @@ bool Service::impl::connectToEngineProxy() {
     return false;
   }
 
-  const char* xsub = "tcp://*:2808";
+  const char* xsub = "tcp://0.0.0.0:2808";
 
   if (zmq_connect(engine_.pub, xsub) != 0) {
     logs::log(ERR, "Failed to connect to engine xsub!\n");
@@ -318,7 +318,7 @@ bool Service::impl::connectToEngineProxy() {
     return false;
   }
 
-  const char* xpub = "tcp://*:2809";
+  const char* xpub = "tcp://0.0.0.0:2809";
 
   if (zmq_connect(engine_.sub, xpub) != 0) {
     logs::log(ERR, "Failed to connect to engine xpub!\n");
