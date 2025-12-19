@@ -52,7 +52,8 @@ class ArgpHandler {
 
  private:
   std::vector<argp_option> global_options_{
-      {"version", 'v', nullptr, 0, "Prints the program version", 0}};
+      {"version", 'v', nullptr, 0, "Prints the program version", 0},
+      {"log-dir", 'l', "dir", 0, "Log directory", 0}};
   std::vector<argp_child> child_array_ = {};
   argp root_argp_ = {};
 };

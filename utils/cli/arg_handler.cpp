@@ -48,14 +48,24 @@ int ArgpHandler::parse(int argc, char** argv) {
 }
 
 int ArgpHandler::default_parser(int key, char* arg, argp_state* state) {
-  (void)arg;
   auto handler = static_cast<ArgpHandler*>(state->input);
 
   switch (key) {
     case 'v':
-      logs::log(INFO, "%s version %s\n", handler->config.program_name,
-                handler->config.program_version);
+      printf("%s version %s\n", handler->config.program_name,
+             handler->config.program_version);
       exit(0);
+    case 'l':
+        logs::log(INFO, "ARG [%s]\n", arg);
+      if (arg != nullptr) {
+        std::string log_dir{arg};
+        logs::log(INFO, "Initializing logs in dir [%s]\n", log_dir.c_str());
+        logs::init(log_dir);
+      } else {
+        logs::log(INFO, "Initializing logs in dir [%s]\n", logs::LOG_DIR);
+        logs::init(logs::LOG_DIR);
+      }
+      break;
     default:
       return ARGP_ERR_UNKNOWN;
   }
