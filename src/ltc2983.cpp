@@ -9,7 +9,8 @@
 
 namespace sensor {
 
-Ltc2983::Ltc2983(std::shared_ptr<fsatutils::iio::Context> ctx, std::string name) {
+Ltc2983::Ltc2983(std::shared_ptr<fsatutils::iio::Context> ctx,
+                 std::string name) {
   supported_types_ = {"temperature"};
   name_ = name;
   channel_based_ = true;
@@ -55,9 +56,10 @@ std::optional<std::vector<SensorDataEntry>> Ltc2983::read() {
 int Ltc2983::addChannel(std::string const& channel) {
   auto result =
       channels_ |
-      std::views::filter([&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
-        return channel == ch->name();
-      });
+      std::views::filter(
+          [&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
+            return channel == ch->name();
+          });
 
   if (!result.empty()) {
     logs::log(WARN, "Channel [%s] was already registered!\n", channel.c_str());
@@ -65,11 +67,15 @@ int Ltc2983::addChannel(std::string const& channel) {
   }
 
   try {
-    channels_.push_back(std::make_unique<fsatutils::iio::Channel>(channel, *dev_, false));
+    channels_.push_back(
+        std::make_unique<fsatutils::iio::Channel>(channel, *dev_, false));
   } catch (std::runtime_error const& e) {
     logs::log(ERR, "Failed to create channel [%s]!\n", channel.c_str());
     return -1;
   }
+
+  logs::log(INFO, "Channel [%s] has been added to device [%s]!\n",
+            channel.c_str(), name_.c_str());
 
   return 0;
 }
@@ -77,9 +83,10 @@ int Ltc2983::addChannel(std::string const& channel) {
 int Ltc2983::removeChannel(std::string const& channel) {
   auto initial_size = channels_.size();
 
-  std::erase_if(channels_, [&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
-    return ch->name() == channel;
-  });
+  std::erase_if(channels_,
+                [&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
+                  return ch->name() == channel;
+                });
 
   return (channels_.size() < initial_size) ? 0 : -1;
 }
@@ -87,9 +94,10 @@ int Ltc2983::removeChannel(std::string const& channel) {
 bool Ltc2983::hasChannel(std::string const& channel) {
   auto result =
       channels_ |
-      std::views::filter([&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
-        return channel == ch->name();
-      });
+      std::views::filter(
+          [&channel](std::unique_ptr<fsatutils::iio::Channel> const& ch) {
+            return channel == ch->name();
+          });
 
   return !result.empty();
 }

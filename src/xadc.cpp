@@ -97,6 +97,9 @@ int xadc::addChannel(std::string const& channel) {
     return -1;
   }
 
+  logs::log(INFO, "Channel [%s] has been added to device [%s]!\n",
+            channel.c_str(), name_.c_str());
+
   return 0;
 }
 
