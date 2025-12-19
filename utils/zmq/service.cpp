@@ -295,7 +295,7 @@ bool Service::impl::connectToEngineProxy() {
 
   if (engine_.pub == nullptr) {
     logs::log(ERR, "Failed to create zmq publisher!\n");
-    zmq_ctx_term(engine_.ctx);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
@@ -303,7 +303,8 @@ bool Service::impl::connectToEngineProxy() {
 
   if (engine_.sub == nullptr) {
     logs::log(ERR, "Failed to create zmq subscribe!\n");
-    zmq_ctx_term(engine_.ctx);
+    zmq_close(engine_.pub);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
@@ -311,7 +312,9 @@ bool Service::impl::connectToEngineProxy() {
 
   if (zmq_connect(engine_.pub, xsub) != 0) {
     logs::log(ERR, "Failed to connect to engine xsub!\n");
-    zmq_ctx_term(engine_.ctx);
+    zmq_close(engine_.pub);
+    zmq_close(engine_.sub);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
@@ -320,7 +323,8 @@ bool Service::impl::connectToEngineProxy() {
   if (zmq_connect(engine_.sub, xpub) != 0) {
     logs::log(ERR, "Failed to connect to engine xpub!\n");
     zmq_close(engine_.pub);
-    zmq_ctx_term(engine_.ctx);
+    zmq_close(engine_.sub);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
@@ -329,7 +333,7 @@ bool Service::impl::connectToEngineProxy() {
     logs::log(ERR, "Failed to subscribe to service name!\n");
     zmq_close(engine_.sub);
     zmq_close(engine_.pub);
-    zmq_ctx_term(engine_.ctx);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
@@ -338,7 +342,7 @@ bool Service::impl::connectToEngineProxy() {
     logs::log(ERR, "Failed to subscribe to discover command!\n");
     zmq_close(engine_.sub);
     zmq_close(engine_.pub);
-    zmq_ctx_term(engine_.ctx);
+    zmq_ctx_destroy(engine_.ctx);
     return false;
   }
 
