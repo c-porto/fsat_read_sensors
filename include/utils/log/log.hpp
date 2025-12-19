@@ -26,8 +26,6 @@ inline std::recursive_mutex logMutex;
 void init(std::string logDir);
 void log(const LogLevel level, std::string str);
 
-void logSensorData(std::string& sensorName, std::string& type, double data);
-
 inline void log(const LogLevel level, const char* fmt, ...) {
   std::lock_guard<std::recursive_mutex> guard{logMutex};
   std::string logMsg = "";

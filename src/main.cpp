@@ -35,6 +35,10 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
+  if (logs::logFile.empty()) {
+    logs::init(logs::LOG_DIR);
+  }
+
   std::shared_ptr<SensorManager> man =
       std::make_shared<SensorManager>(SensorManager::cli_config);
 
@@ -66,7 +70,6 @@ int main(int argc, char** argv) {
     service->runService();
   }
 
-  man->trackRegisteredDevices();
   man->runManager();
 
   return 0;
