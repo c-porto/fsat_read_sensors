@@ -122,7 +122,6 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
  public:
   SensorManager(ManagerCLI& cli);
   void runManager(void);
-  void stopManager(void);
   int trackRegisteredDevices(void);
   int setMeasurementPeriod(const uint64_t time_ms);
   int startTracking(std::string const& sensorName, std::string const& channel);
@@ -148,7 +147,6 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
   SqliteDb db_;
   std::unique_ptr<SensorFactory> factory_;
   uint64_t meas_period_ms_{60000ULL};
-  bool running_{true};
 };
 
 #endif

@@ -258,7 +258,7 @@ void SensorManager::runManager(void) {
   while (true) {
     auto next = std::chrono::steady_clock::now();
 
-    if (!tracking_sensors_.empty() && running_) {
+    if (!tracking_sensors_.empty()) {
       this->readTrackedSensors();
     }
 
