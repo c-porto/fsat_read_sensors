@@ -56,13 +56,12 @@ int ArgpHandler::default_parser(int key, char* arg, argp_state* state) {
              handler->config.program_version);
       exit(0);
     case 'l':
-        logs::log(INFO, "ARG [%s]\n", arg);
       if (arg != nullptr) {
         std::string log_dir{arg};
-        logs::log(INFO, "Initializing logs in dir [%s]\n", log_dir.c_str());
+        logs::log(INFO, "Initializing logs in dir [%s]...\n", log_dir.c_str());
         logs::init(log_dir);
       } else {
-        logs::log(INFO, "Initializing logs in dir [%s]\n", logs::LOG_DIR);
+        logs::log(INFO, "Initializing logs in dir [%s]...\n", logs::LOG_DIR);
         logs::init(logs::LOG_DIR);
       }
       break;
