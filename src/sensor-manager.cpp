@@ -66,7 +66,6 @@ constexpr argp man_argp = {
           }
           break;
         case ARGP_KEY_IIO_URI:
-          logs::log(DEBUG, "Test: %s\n", arg);
           if (arg) SensorManager::cli_config.iioUri = std::string{arg};
           break;
         default:
