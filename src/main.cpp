@@ -5,7 +5,6 @@
 #include <utils/log/log.hpp>
 #include <utils/zmq/service.hpp>
 
-#define LOG_DIR "/var/log/fsat/"
 #define DB_PATH "/var/local/read-sensors.sqlite3"
 
 #include "version.hpp"
@@ -13,8 +12,6 @@
 using namespace fsatutils;
 
 int main(int argc, char** argv) {
-  logs::init(LOG_DIR);
-
   /* Defaults */
   SensorManager::cli_config.iioType = iio::ContextType::DEFAULT;
   SensorManager::cli_config.dbPath = DB_PATH;

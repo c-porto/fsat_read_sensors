@@ -1,6 +1,3 @@
-#include <sys/syslog.h>
-#include <systemd/sd-journal.h>
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -17,39 +14,33 @@ void logs::log(const LogLevel level, std::string str) {
   std::lock_guard<std::recursive_mutex> guard{logMutex};
   std::string coloredStr = str;
   std::string out = str;
-  int sysLog;
 
   switch (level) {
     case LOG:
       out = "[LOG] " + str;
       coloredStr = str;
-      sysLog = LOG_NOTICE;
       break;
     case WARN:
       out = "[WARN] " + str;
       coloredStr = "\033[1;33m" + str + "\033[0m";  // yellow
-      sysLog = LOG_WARNING;
       break;
     case ERR:
       out = "[ERR] " + str;
       coloredStr = "\033[1;31m" + str + "\033[0m";  // red
-      sysLog = LOG_ERR;
       break;
     case INFO:
       out = "[INFO] " + str;
       coloredStr = "\033[1;32m" + str + "\033[0m";  // green
-      sysLog = LOG_INFO;
       break;
     case DEBUG:
       out = "[DEBUG] " + str;
       coloredStr = "\033[1;34m" + str + "\033[0m";  // blue
-      sysLog = LOG_DEBUG;
       break;
     default:
       break;
   }
 
-  if (!disableFileLogs) {
+  if (!disableFileLogs && !logFile.empty()) {
     std::ofstream ofs;
     ofs.open(logFile, std::ios::out | std::ios::app);
     ofs << out << "\n";
