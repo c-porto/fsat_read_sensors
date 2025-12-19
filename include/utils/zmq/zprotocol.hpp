@@ -70,6 +70,7 @@ inline constexpr std::string_view protoToString(MessageProtocol proto) {
     case MessageProtocol::PROTOBUF:
       return "protobuf";
   }
+  return "Unknown";
 }
 
 inline constexpr std::string_view typeToString(ArgType t) {
@@ -95,6 +96,7 @@ inline constexpr std::string_view typeToString(ArgType t) {
     case ArgType::BLOB:
       return "blob";
   }
+  return "Invalid";
 }
 
 inline constexpr std::optional<ArgType> stringToType(
