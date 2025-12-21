@@ -1,168 +1,125 @@
-#include <functional>
 #include <iio.h>
+
+#include <memory>
 #include <optional>
+#include <read-sensors/ina219.hpp>
+#include <read-sensors/sensor.hpp>
 #include <stdexcept>
-#include <unordered_map>
+#include <fsatutils/log/log.hpp>
+#include <vector>
 
-#include "sensor.hpp"
-#include "log.hpp"
-#include "ina219.hpp"
+namespace sensor {
 
-Ina219::Ina219(struct iio_context *ctx, std::string name)
-	: ctx_{ ctx }
-{
-	name_ = std::move(name);
-	supported_types_ = { "voltage", "current", "power" };
+Ina219::Ina219(std::shared_ptr<fsatutils::iio::Context> ctx, std::string name) {
+  supported_types_ = {"voltage", "current", "power"};
+  name_ = name;
+  channel_based_ = false;
 
-	if (ctx_ == nullptr)
-		throw std::runtime_error("context is null!");
+  dev_ = std::make_unique<fsatutils::iio::Device>(ctx, name);
 
-	dev_ = iio_context_find_device(ctx_, name_.c_str());
-
-	if (dev_ == nullptr) {
-		logs::log(ERR, "Failed to find device [%s] in context!\n", name_.c_str());
-		throw std::runtime_error("find iio device!");
-	}
-
-	ch_volt_ = iio_device_find_channel(dev_, "voltage1", false);
-
-	if (ch_volt_ == nullptr) {
-		logs::log(ERR, "Failed to find voltage1 channel!\n");
-		throw std::runtime_error("find voltage1");
-	}
-
-	ch_curr_ = iio_device_find_channel(dev_, "current3", false);
-
-	if (ch_curr_ == nullptr) {
-		logs::log(ERR, "Failed to find current3 channel!\n");
-		throw std::runtime_error("find current3");
-	}
-
-	ch_pwr_ = iio_device_find_channel(dev_, "power2", false);
-
-	if (ch_pwr_ == nullptr) {
-		logs::log(ERR, "Failed to find power2 channel!\n");
-		throw std::runtime_error("find power2");
-	}
+  volt_ = std::make_unique<fsatutils::iio::Channel>("voltage1", *dev_, false);
+  curr_ = std::make_unique<fsatutils::iio::Channel>("current1", *dev_, false);
+  pwr_ = std::make_unique<fsatutils::iio::Channel>("power2", *dev_, false);
 }
 
-std::optional<sensor::SensorDataEntry> Ina219::read(std::string const &sensorType)
-{
-	static const std::unordered_map<
-		std::string, std::function<std::optional<sensor::SensorDataEntry>(const Ina219 &)> >
-		type_map = {
-			{ "voltage", &Ina219::get_voltage },
-			{ "current", &Ina219::get_current },
-			{ "power", &Ina219::get_power },
-		};
+std::optional<std::vector<SensorDataEntry>> Ina219::read() {
+  std::vector<SensorDataEntry> readings;
 
-	auto it = type_map.find(sensorType);
+  auto entry = this->get_current();
 
-	if (it != type_map.end()) {
-		return it->second(*this);
-	}
+  if (entry) {
+    readings.push_back(*entry);
+  }
 
-	return std::nullopt;
+  entry = this->get_voltage();
+
+  if (entry) {
+    readings.push_back(*entry);
+  }
+
+  entry = this->get_power();
+
+  if (entry) {
+    readings.push_back(*entry);
+  }
+
+  if (readings.empty()) return std::nullopt;
+
+  return readings;
 }
 
-std::optional<sensor::SensorDataEntry> Ina219::get_power() const
-{
-	if (!ch_pwr_)
-		return std::nullopt;
+std::optional<sensor::SensorDataEntry> Ina219::get_power() const {
+  long long raw = 0;
+  double scale = 0.0f;
 
-	long long raw = 0;
-	double scale = 0.0f;
+  try {
+    raw = pwr_->read_attr<long long>("raw");
+    scale = pwr_->read_attr<double>("scale");
+  } catch (std::runtime_error const& e) {
+    logs::log(ERR, "Failed to read power2 input attr!\n");
+    return std::nullopt;
+  }
 
-	auto res = iio_channel_attr_read_longlong(ch_pwr_, "raw", &raw);
+  double read = static_cast<double>(static_cast<int16_t>(raw) *
+                                    static_cast<double>(scale));
 
-	if (res < 0) {
-		logs::log(ERR, "Failed to read power2 raw attr!\n");
-		return std::nullopt;
-	}
+  sensor::SensorDataEntry entry{
+      .sensorName = name_,
+      .sensorType = "ina219",
+      .measurementType = "power",
+      .value = read,
+  };
 
-	res = iio_channel_attr_read_double(ch_pwr_, "scale", &scale);
-
-	if (res < 0) {
-		logs::log(ERR, "Failed to read power2 scale attr!\n");
-		return std::nullopt;
-	}
-
-	double read = static_cast<double>(static_cast<int16_t>(raw) * static_cast<double>(scale));
-
-	sensor::SensorDataEntry entry{
-		.sensorName = name_,
-		.sensorType = "ina219",
-		.measurementType = "power",
-		.value = read,
-	};
-
-	return entry;
+  return entry;
 }
 
-std::optional<sensor::SensorDataEntry> Ina219::get_current() const
-{
-	if (!ch_curr_)
-		return std::nullopt;
+std::optional<sensor::SensorDataEntry> Ina219::get_current() const {
+  long long raw = 0;
+  double scale = 0.0f;
 
-	long long raw = 0;
-	double scale = 0.0f;
+  try {
+    raw = curr_->read_attr<long long>("raw");
+    scale = curr_->read_attr<double>("scale");
+  } catch (std::runtime_error const& e) {
+    logs::log(ERR, "Failed to read current1 input attr!\n");
+    return std::nullopt;
+  }
 
-	auto res = iio_channel_attr_read_longlong(ch_curr_, "raw", &raw);
+  double read = static_cast<double>(static_cast<int16_t>(raw) *
+                                    static_cast<double>(scale));
 
-	if (res < 0) {
-		logs::log(ERR, "Failed to read current3 raw attr!\n");
-		return std::nullopt;
-	}
+  sensor::SensorDataEntry entry{
+      .sensorName = name_,
+      .sensorType = "ina219",
+      .measurementType = "current",
+      .value = read,
+  };
 
-	res = iio_channel_attr_read_double(ch_curr_, "scale", &scale);
-
-	if (res < 0) {
-		logs::log(ERR, "Failed to read current3 scale attr!\n");
-		return std::nullopt;
-	}
-
-	double read = static_cast<double>(static_cast<int16_t>(raw) * static_cast<double>(scale));
-
-	sensor::SensorDataEntry entry{
-		.sensorName = name_,
-		.sensorType = "ina219",
-		.measurementType = "current",
-		.value = read,
-	};
-
-	return entry;
+  return entry;
 }
 
-std::optional<sensor::SensorDataEntry> Ina219::get_voltage() const
-{
-	if (!ch_volt_)
-		return std::nullopt;
+std::optional<sensor::SensorDataEntry> Ina219::get_voltage() const {
+  long long raw = 0;
+  double scale = 0.0f;
 
-	long long raw = 0;
-	double scale = 0.0f;
+  try {
+    raw = volt_->read_attr<long long>("raw");
+    scale = volt_->read_attr<double>("scale");
+  } catch (std::runtime_error const& e) {
+    logs::log(ERR, "Failed to read voltage1 input attr!\n");
+    return std::nullopt;
+  }
 
-	auto res = iio_channel_attr_read_longlong(ch_volt_, "raw", &raw);
+  double read = static_cast<double>(static_cast<int16_t>(raw) *
+                                    static_cast<double>(scale));
 
-	if (res < 0) {
-		logs::log(ERR, "Failed to read voltage1 raw attr!\n");
-		return std::nullopt;
-	}
+  sensor::SensorDataEntry entry{
+      .sensorName = name_,
+      .sensorType = "ina219",
+      .measurementType = "voltage",
+      .value = read,
+  };
 
-	res = iio_channel_attr_read_double(ch_volt_, "scale", &scale);
-
-	if (res < 0) {
-		logs::log(ERR, "Failed to read voltage1 scale attr!\n");
-		return std::nullopt;
-	}
-
-	double read = static_cast<double>(static_cast<int16_t>(raw) * static_cast<double>(scale));
-
-	sensor::SensorDataEntry entry{
-		.sensorName = name_,
-		.sensorType = "ina219",
-		.measurementType = "voltage",
-		.value = read,
-	};
-
-	return entry;
+  return entry;
 }
+}  // namespace sensor

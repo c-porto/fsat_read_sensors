@@ -1,7 +1,7 @@
 project(
   'read-sensors',
   'cpp',
-  version: '0.3.0',
+  version: '1.0',
   default_options: [
     'warning_level=3',
     'cpp_std=c++20',
@@ -10,66 +10,59 @@ project(
   ],
 )
 
-add_project_arguments(
-  [
-    '-Wno-unused-parameter',
-    '-Wno-unused-value',
-    '-Wno-missing-field-initializers',
-    '-Wno-narrowing',
-    '-Wno-pointer-arith',
-  ],
-  language: 'cpp',
-)
+rs_deps = []
+rs_srcs = []
 
-sources = files(
-  'src/daemon.cpp',
-  'src/daemon.hpp',
-  'src/db.cpp',
-  'src/db.hpp',
-  'src/log.cpp',
-  'src/log.hpp',
-  'src/main.cpp',
-  'src/parser.hpp',
-  'src/sensor-manager.cpp',
-  'src/sensor-manager.hpp',
-  'src/sensor.hpp',
-  'src/ina219.hpp',
-  'src/ina219.cpp',
-  'src/tmp112.hpp',
-  'src/tmp112.cpp',
-)
-
-rs_dependencies = []
-
-install_src = get_option('install_src')
+rs_inc = include_directories('include')
 
 sqlite3_dep = dependency('sqlite3')
 
-libsystemd = dependency('libsystemd')
+fsatutils = dependency('fsatutils')
 
-libiio = dependency('libiio')
+rs_deps += sqlite3_dep
+rs_deps += fsatutils
 
-nlohmann_json = dependency('nlohmann_json')
+subdir('src')
 
-rs_dependencies += sqlite3_dep
-rs_dependencies += libsystemd
-rs_dependencies += libiio
-rs_dependencies += nlohmann_json
+c_args = [
+  '-Wno-unused-parameter',
+  '-Wno-unused-value',
+  '-Wno-missing-field-initializers',
+  '-Wno-narrowing',
+  '-Wno-pointer-arith',
+  '-Wshadow',
+  '-Wcast-align',
+  '-Wwrite-strings',
+]
 
-read_sensors = executable('read_sensors', sources, dependencies: rs_dependencies, install: true)
+py = find_program('python3')
+
+version_header_path = meson.current_build_dir() / 'version.hpp'
+
+version_hpp = custom_target(
+  'version_hpp',
+  output: 'version.hpp',
+  input: 'scripts/gen_versioning.py',
+  command: [
+    py,
+    '@INPUT@',
+    version_header_path,
+    meson.project_version(),
+  ],
+  build_by_default: true,
+)
+
+read_sensors = executable(
+  meson.project_name(),
+  sources: [rs_srcs, version_hpp],
+  include_directories: rs_inc,
+  dependencies: rs_deps,
+  c_args: c_args,
+  install: true,
+)
 
 install_data(
   'services/read-sensors.service',
   install_dir: get_option('systemd_unitdir'),
   rename: 'read-sensors.service',
 )
-
-install_data(
-  'services/read-sensors.socket',
-  install_dir: get_option('systemd_unitdir'),
-  rename: 'read-sensors.socket',
-)
-
-if install_src
-  install_data(sources, install_dir: get_option('src_install_dir'))
-endif
