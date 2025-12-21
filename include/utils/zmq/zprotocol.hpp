@@ -125,14 +125,8 @@ inline std::optional<Command> parseJSON(std::span<const uint8_t> command) {
     cmd.cmd = j["command"];
 
     for (auto const& arg : j["args"]) {
-      CommandArg a;
+      CommandArg a{};
 
-      std::string type = arg["type"];
-      auto etype = stringToType(type);
-
-      if (!etype.has_value()) continue;
-
-      a.type = etype.value();
       a.name = arg["name"];
       a.value = arg["value"];
 

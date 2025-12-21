@@ -84,7 +84,7 @@ constexpr argp man_argp = {
 
 std::vector<argp_child> SensorManager::get_argp_children() {
   return std::vector<argp_child>{
-      {.argp = &man_argp, .flags = 0, .header = nullptr, .group = 0}};
+      {.argp = &man_argp, .flags = 0, .header = "Sensor Manager", .group = 0}};
 }
 
 std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {

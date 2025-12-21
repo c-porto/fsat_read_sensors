@@ -1,5 +1,6 @@
 #include <zmq.h>
 
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -49,7 +50,8 @@ class Service::impl {
 
  private:
   std::variant<std::monostate, Command, DiscoverMsgHeader> parseMessage(
-      std::span<const uint8_t> msg);
+      std::span<std::uint8_t, ZMQ_FLATSAT_ENGINE_MTU> buf,
+      std::span<const uint8_t> topic, int more, std::size_t more_size);
 
   bool runCommandHandler(Command cmd);
 
@@ -134,27 +136,31 @@ void Service::impl::cleanResources() {
 
 void Service::impl::workTask(std::stop_token stoken) {
   while (!stoken.stop_requested()) {
-    zmq_msg_t msg;
+    std::array<std::uint8_t, ZMQ_FLATSAT_ENGINE_MTU> buf;
+    int more = 0;
+    std::size_t more_size = sizeof(more);
 
-    if (zmq_msg_init_size(&msg, ZMQ_FLATSAT_ENGINE_MTU) < 0) {
-      logs::log(ERR, "Error message buffer [%s]\n", zmq_strerror(zmq_errno()));
-      continue;
-    }
+    int res = zmq_recv(engine_.sub, buf.data(), buf.size(), 0);
 
-    if (zmq_msg_recv(&msg, engine_.sub, 0) < 0) {
+    if (res < 0) {
       logs::log(ERR, "Error recv data [%s]\n", zmq_strerror(zmq_errno()));
       continue;
     }
 
-    std::span<uint8_t> m{static_cast<uint8_t*>(zmq_msg_data(&msg)),
-                         zmq_msg_size(&msg)};
+    zmq_getsockopt(engine_.sub, ZMQ_RCVMORE, &more, &more_size);
+
+    if (!more) {
+      logs::log(ERR, "Message is not multipart!\n");
+      continue;
+    }
+
+    std::span<uint8_t> m{buf.data(), static_cast<std::size_t>(res)};
 
     std::variant<std::monostate, Command, DiscoverMsgHeader> request =
-        parseMessage(m);
+        parseMessage(buf, m, more, more_size);
 
     if (std::holds_alternative<std::monostate>(request)) {
       logs::log(ERR, "Failed to parse message!");
-      zmq_msg_close(&msg);
       continue;
     }
 
@@ -177,54 +183,92 @@ void Service::impl::workTask(std::stop_token stoken) {
         logs::log(ERR, "Failed to run command handler!");
       }
     }
-    zmq_msg_close(&msg);
   }
 }
 
 std::variant<std::monostate, Command, DiscoverMsgHeader>
-Service::impl::parseMessage(std::span<const uint8_t> msg) {
-  if (msg.size() < 4U) {
+Service::impl::parseMessage(std::span<std::uint8_t, ZMQ_FLATSAT_ENGINE_MTU> buf,
+                            std::span<const uint8_t> topic, int more,
+                            std::size_t more_size) {
+  auto min_size = std::min(g_discoverTopic.size(), desc_.name.size());
+
+  if (topic.size() < min_size) {
     logs::log(ERR, "Message was too short to be parsed!");
     return std::monostate{};
   }
 
-  /* Check the subscribed topic of the message */
-  if (memcmp(msg.data(), g_discoverTopic.data(), 4U) == 0) {
-    auto header = msg.subspan(4U, msg.size() - 4U);
-    return DiscoverMsgHeader{.version = header[0]};
-  }
+  if (topic.size() == g_discoverTopic.size()) {
+    /* Check the subscribed topic of the message */
 
-  if (memcmp(msg.data(), desc_.name.c_str(), desc_.name.size()) == 0) {
-    auto raw_header = msg.subspan(desc_.name.size(), sizeof(CommandMsgHeader));
-    auto payload =
-        msg.last(msg.size() - desc_.name.size() - sizeof(CommandMsgHeader));
+    if (std::equal(topic.begin(), topic.end(), g_discoverTopic.begin())) {
+      int res = zmq_recv(engine_.sub, buf.data(), buf.size(), 0);
 
-    CommandMsgHeader header = {
-        .version = raw_header[0],
-        .proto = static_cast<MessageProtocol>(raw_header[1]),
-    };
-
-    switch (header.proto) {
-      case MessageProtocol::BINARY: {
+      if (res < 0) {
+        logs::log(ERR, "Error recv discover header [%s]\n",
+                  zmq_strerror(zmq_errno()));
         return std::monostate{};
       }
-      case MessageProtocol::JSON: {
-        auto parsed_cmd = parseJSON(payload);
-        if (parsed_cmd.has_value()) {
-          return parsed_cmd.value();
-        } else {
-          return std::monostate{};
-        }
-      }
-      case MessageProtocol::PROTOBUF: {
-        return std::monostate{};
-      }
-      default:
-        throw_runtime_error("Unknown message protocol!");
+
+      return DiscoverMsgHeader{.version = buf[0]};
     }
   }
 
-  throw_runtime_error("Message with an unsubscribed topic was received!");
+  /* If Topic isn't "disc" it must be the service's name, courtesy of ZMQ
+   * filters */
+
+  int res = zmq_recv(engine_.sub, buf.data(), buf.size(), 0);
+
+  if (res < 0) {
+    logs::log(ERR, "Error recv command header [%s]\n",
+              zmq_strerror(zmq_errno()));
+    return std::monostate{};
+  } else if (res != 2) {
+    logs::log(ERR, "Command header must be 2 bytes\n");
+    return std::monostate{};
+  }
+
+  std::span<uint8_t> raw_header{buf.data(), 2U};
+
+  CommandMsgHeader header = {
+      .version = raw_header[0],
+      .proto = static_cast<MessageProtocol>(raw_header[1]),
+  };
+
+  zmq_getsockopt(engine_.sub, ZMQ_RCVMORE, &more, &more_size);
+
+  if (!more) {
+    logs::log(ERR, "Payload is missing on multipart message!\n");
+    return std::monostate{};
+  }
+
+  res = zmq_recv(engine_.sub, buf.data(), buf.size(), 0);
+
+  if (res < 0) {
+    logs::log(ERR, "Error recv command payload [%s]\n",
+              zmq_strerror(zmq_errno()));
+    return std::monostate{};
+  }
+
+  std::span<const uint8_t> payload{buf.data(), static_cast<std::size_t>(res)};
+
+  switch (header.proto) {
+    case MessageProtocol::BINARY: {
+      return std::monostate{};
+    }
+    case MessageProtocol::JSON: {
+      auto parsed_cmd = parseJSON(payload);
+      if (parsed_cmd.has_value()) {
+        return parsed_cmd.value();
+      } else {
+        return std::monostate{};
+      }
+    }
+    case MessageProtocol::PROTOBUF: {
+      return std::monostate{};
+    }
+    default:
+      throw_runtime_error("Unknown message protocol!");
+  }
 }
 
 bool Service::impl::runCommandHandler(Command cmd) {
