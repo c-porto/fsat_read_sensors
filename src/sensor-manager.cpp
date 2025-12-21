@@ -91,7 +91,7 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   fsatutils::zmq::Command set_period;
   set_period.cmd = "set_measurement_period";
   set_period.args = {{
-      .name = "period (ms)",
+      .name = "period(ms)",
       .value = "",
       .type = fsatutils::zmq::ArgType::UINT64,
       .optional = false,
@@ -100,13 +100,13 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   fsatutils::zmq::Command reg;
   reg.cmd = "register";
   reg.args = {{
-                  .name = "sensor name",
+                  .name = "sensor_name",
                   .value = "",
                   .type = fsatutils::zmq::ArgType::STRING,
                   .optional = false,
               },
               {
-                  .name = "sensor type",
+                  .name = "sensor_type",
                   .value = "",
                   .type = fsatutils::zmq::ArgType::STRING,
                   .optional = false,
@@ -116,7 +116,7 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   unreg.cmd = "unregister";
   unreg.args = {
       {
-          .name = "sensor name",
+          .name = "sensor_name",
           .value = "",
           .type = fsatutils::zmq::ArgType::STRING,
           .optional = false,
@@ -126,7 +126,7 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   fsatutils::zmq::Command track;
   track.cmd = "track";
   track.args = {{
-                    .name = "sensor name",
+                    .name = "sensor_name",
                     .value = "",
                     .type = fsatutils::zmq::ArgType::STRING,
                     .optional = false,
@@ -141,7 +141,7 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   fsatutils::zmq::Command untrack;
   untrack.cmd = "untrack";
   untrack.args = {{
-                      .name = "sensor name",
+                      .name = "sensor_name",
                       .value = "",
                       .type = fsatutils::zmq::ArgType::STRING,
                       .optional = false,
@@ -166,9 +166,9 @@ void SensorManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
     std::string sensorName;
     std::string sensorType;
     for (const auto& arg : cmd.args) {
-      if (arg.name == "sensor name") {
+      if (arg.name == "sensor_name") {
         sensorName = arg.value;
-      } else if (arg.name == "sensor type") {
+      } else if (arg.name == "sensor_type") {
         sensorType = arg.value;
       }
     }
@@ -176,7 +176,7 @@ void SensorManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
   } else if (cmd.cmd == "unregister") {
     std::string sensorName;
     for (const auto& arg : cmd.args) {
-      if (arg.name == "sensor name") {
+      if (arg.name == "sensor_name") {
         sensorName = arg.value;
       }
     }
@@ -185,7 +185,7 @@ void SensorManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
     std::string sensorName;
     std::string channel;
     for (const auto& arg : cmd.args) {
-      if (arg.name == "sensor name") {
+      if (arg.name == "sensor_name") {
         sensorName = arg.value;
       } else if (arg.name == "channel") {
         channel = arg.value;
@@ -196,7 +196,7 @@ void SensorManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
     std::string sensorName;
     std::string channel;
     for (const auto& arg : cmd.args) {
-      if (arg.name == "sensor name") {
+      if (arg.name == "sensor_name") {
         sensorName = arg.value;
       } else if (arg.name == "channel") {
         channel = arg.value;
@@ -240,6 +240,7 @@ SensorManager::SensorManager(ManagerCLI& cli) : db_{cli.dbPath} {
   registerDevice("h2-25_26", "ina219");
   registerDevice("h2-27_28", "ina219");
   registerDevice("ambient-temp", "tmp112");
+  registerDevice("ltc2983", "ltc2983");
 
   /* Track XADC Channels */
   startTracking("xadc", "temp0");
