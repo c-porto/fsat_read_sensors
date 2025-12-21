@@ -1,52 +1,68 @@
-project('read-sensors', 'cpp',
-  version : '0.1',
-  default_options : [
+project(
+  'read-sensors',
+  'cpp',
+  version: '1.0',
+  default_options: [
     'warning_level=3',
     'cpp_std=c++20',
     'optimization=3',
     'buildtype=release',
-  ])
-
-  add_project_arguments(
-  [
-    '-Wno-unused-parameter',
-    '-Wno-unused-value',
-    '-Wno-missing-field-initializers',
-    '-Wno-narrowing',
-    '-Wno-pointer-arith',
   ],
-  language: 'cpp')
+)
 
-sources = files(
-    'src/sensor-manager.hpp', 
-    'src/sensor-manager.cpp',
-    'src/log.hpp',
-    'src/log.cpp',
-    'src/sensor.hpp',
-    'src/sensor.cpp',
-    'src/daemon.hpp',
-    'src/daemon.cpp',
-    'src/main.cpp',
-    'src/db.hpp',
-    'src/db.cpp',
-  )
+rs_deps = []
+rs_srcs = []
 
-install_src = get_option('install_src')
+rs_inc = include_directories('include')
 
 sqlite3_dep = dependency('sqlite3')
 
-binary = executable('read_sensors', sources, dependencies: sqlite3_dep, install: true)
+fsatutils = dependency('fsatutils')
 
+rs_deps += sqlite3_dep
+rs_deps += fsatutils
 
-install_data('services/read-sensors.service',
-             install_dir: get_option('systemd_unitdir'),
-             rename: 'read-sensors.service')
+subdir('src')
 
-install_data('services/read-sensors.socket',
-             install_dir: get_option('systemd_unitdir'),
-             rename: 'read-sensors.socket')
+c_args = [
+  '-Wno-unused-parameter',
+  '-Wno-unused-value',
+  '-Wno-missing-field-initializers',
+  '-Wno-narrowing',
+  '-Wno-pointer-arith',
+  '-Wshadow',
+  '-Wcast-align',
+  '-Wwrite-strings',
+]
 
-if install_src
-  install_data(sources,
-               install_dir: get_option('src_install_dir'))
-endif
+py = find_program('python3')
+
+version_header_path = meson.current_build_dir() / 'version.hpp'
+
+version_hpp = custom_target(
+  'version_hpp',
+  output: 'version.hpp',
+  input: 'scripts/gen_versioning.py',
+  command: [
+    py,
+    '@INPUT@',
+    version_header_path,
+    meson.project_version(),
+  ],
+  build_by_default: true,
+)
+
+read_sensors = executable(
+  meson.project_name(),
+  sources: [rs_srcs, version_hpp],
+  include_directories: rs_inc,
+  dependencies: rs_deps,
+  c_args: c_args,
+  install: true,
+)
+
+install_data(
+  'services/read-sensors.service',
+  install_dir: get_option('systemd_unitdir'),
+  rename: 'read-sensors.service',
+)

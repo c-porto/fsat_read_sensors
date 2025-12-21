@@ -1,36 +1,76 @@
+#include <fsatutils/cli/arg_handler.hpp>
+#include <fsatutils/iio/context.hpp>
+#include <fsatutils/log/log.hpp>
+#include <fsatutils/zmq/service.hpp>
 #include <memory>
+#include <read-sensors/sensor-manager.hpp>
 
-#include "log.hpp"
-#include "sensor-manager.hpp"
-#include "daemon.hpp"
-#include <vector>
+#define DB_PATH "/var/local/read-sensors.sqlite3"
 
-#define DEBUG 0
+#include "version.hpp"
 
-#if DEBUG == 1
-#warning Debug flag is enabled, make sure to provide a mockup for the drivers filesystem and place its absolute path at the "TEST_FS_PATH" macro on main.cpp
-#define TEST_FS_PATH ""
-
-#define BASE_PATH (TEST_FS_PATH "/sys/class/hwmon/")
-#define LOG_DIR   (TEST_FS_PATH "/var/log/fsat/")
-#define DB_PATH   (TEST_FS_PATH "/var/local/read-sensors.db")
-#else
-#define BASE_PATH "/sys/class/hwmon/"
-#define LOG_DIR   "/var/log/fsat/"
-#define DB_PATH   "/var/local/read-sensors.db"
-#endif
-
-std::vector<std::string> devs = {"main-radio-power", "tmp102", "obdh-power", "beacon-power", "edc-power", "beacon2-power", "antenna-power", "payload-power"};
+using namespace fsatutils;
 
 int main(int argc, char** argv) {
-    logs::init(LOG_DIR);
-    logs::disableSensorStdOut = true;
-    logs::disableTime = true;
+  /* Defaults */
+  SensorManager::cli_config.iioType = iio::ContextType::DEFAULT;
+  SensorManager::cli_config.dbPath = DB_PATH;
 
-    std::shared_ptr<CSensorManager> man = std::make_shared<CSensorManager>(BASE_PATH, DB_PATH);
+  ArgpHandler::Config config{};
 
-    CDaemon daemon{man};
+  config.program_name = "read-sensors";
+  config.doc = "Service to manage FlatSat2 sensors";
+  config.flags = 0;
+  config.parser = nullptr;
+  config.program_version = PROJECT_VERSION;
 
-    man->registerSensors(std::move(devs));
-    man->runManager();
+  ArgpHandler handler(config);
+
+  handler.add_child_structures(SensorManager::get_argp_children());
+
+  int result = handler.parse(argc, argv);
+
+  if (result != 0) {
+    logs::log(ERR, "Failed to parse command line arguments! Terminating...");
+    exit(1);
+  }
+
+  if (logs::logFile.empty()) {
+    logs::init(logs::LOG_DIR);
+  }
+
+  std::shared_ptr<SensorManager> man =
+      std::make_shared<SensorManager>(SensorManager::cli_config);
+
+  auto manager_cmds = SensorManager::getCommandDescription();
+
+  zmq::Service::ServiceDescription desc = {
+      .name = "read-sensors",
+      .version = PROJECT_VERSION,
+      .compatibleProtocols =
+          static_cast<std::uint8_t>(zmq::MessageProtocol::JSON),
+      .preferedProtocol = static_cast<std::uint8_t>(zmq::MessageProtocol::JSON),
+  };
+
+  std::unique_ptr<zmq::Service> service;
+
+  try {
+    service = std::make_unique<zmq::Service>(desc);
+  } catch (std::runtime_error const& e) {
+    logs::log(ERR, "Failed to create ZMQ service: [%s]!\n", e.what());
+  }
+
+  if (service != nullptr) {
+    for (auto const& cmd : manager_cmds) {
+      service->registerCommand(cmd.cmd, cmd.args,
+                               &SensorManager::commandHandler,
+                               static_cast<void*>(man.get()));
+    }
+
+    service->runService();
+  }
+
+  man->runManager();
+
+  return 0;
 }
