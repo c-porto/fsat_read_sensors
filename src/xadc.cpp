@@ -10,7 +10,7 @@
 namespace sensor {
 
 xadc::xadc(std::shared_ptr<fsatutils::iio::Context> ctx, std::string name) {
-  supported_types_ = {"voltage"};
+  supported_types_ = {"voltage", "temperature"};
   name_ = name;
   channel_based_ = true;
 
