@@ -1,13 +1,13 @@
 #include <algorithm>
 #include <chrono>
+#include <fsatutils/log/log.hpp>
+#include <fsatutils/zmq/zprotocol.hpp>
 #include <memory>
 #include <mutex>
 #include <read-sensors/ltc2983.hpp>
 #include <read-sensors/sensor-manager.hpp>
 #include <read-sensors/sensor.hpp>
 #include <thread>
-#include <fsatutils/log/log.hpp>
-#include <fsatutils/zmq/zprotocol.hpp>
 #include <vector>
 
 namespace {
@@ -124,34 +124,34 @@ std::vector<fsatutils::zmq::Command> SensorManager::getCommandDescription() {
   };
 
   fsatutils::zmq::Command track;
-  reg.cmd = "track";
-  reg.args = {{
-                  .name = "sensor name",
-                  .value = "",
-                  .type = fsatutils::zmq::ArgType::STRING,
-                  .optional = false,
-              },
-              {
-                  .name = "channel",
-                  .value = "",
-                  .type = fsatutils::zmq::ArgType::STRING,
-                  .optional = false,
-              }};
+  track.cmd = "track";
+  track.args = {{
+                    .name = "sensor name",
+                    .value = "",
+                    .type = fsatutils::zmq::ArgType::STRING,
+                    .optional = false,
+                },
+                {
+                    .name = "channel",
+                    .value = "",
+                    .type = fsatutils::zmq::ArgType::STRING,
+                    .optional = false,
+                }};
 
   fsatutils::zmq::Command untrack;
-  reg.cmd = "untrack";
-  reg.args = {{
-                  .name = "sensor name",
-                  .value = "",
-                  .type = fsatutils::zmq::ArgType::STRING,
-                  .optional = false,
-              },
-              {
-                  .name = "channel",
-                  .value = "",
-                  .type = fsatutils::zmq::ArgType::STRING,
-                  .optional = false,
-              }};
+  untrack.cmd = "untrack";
+  untrack.args = {{
+                      .name = "sensor name",
+                      .value = "",
+                      .type = fsatutils::zmq::ArgType::STRING,
+                      .optional = false,
+                  },
+                  {
+                      .name = "channel",
+                      .value = "",
+                      .type = fsatutils::zmq::ArgType::STRING,
+                      .optional = false,
+                  }};
 
   return {set_period, reg, unreg, track, untrack};
 }

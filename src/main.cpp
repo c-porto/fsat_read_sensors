@@ -1,9 +1,9 @@
-#include <memory>
-#include <read-sensors/sensor-manager.hpp>
 #include <fsatutils/cli/arg_handler.hpp>
 #include <fsatutils/iio/context.hpp>
 #include <fsatutils/log/log.hpp>
 #include <fsatutils/zmq/service.hpp>
+#include <memory>
+#include <read-sensors/sensor-manager.hpp>
 
 #define DB_PATH "/var/local/read-sensors.sqlite3"
 
