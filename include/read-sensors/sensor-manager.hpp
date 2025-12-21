@@ -14,10 +14,10 @@
 #include <read-sensors/tmp112.hpp>
 #include <read-sensors/xadc.hpp>
 #include <string>
-#include <utils/cli/arg_handler.hpp>
-#include <utils/iio/context.hpp>
-#include <utils/log/log.hpp>
-#include <utils/zmq/zprotocol.hpp>
+#include <fsatutils/cli/arg_handler.hpp>
+#include <fsatutils/iio/context.hpp>
+#include <fsatutils/log/log.hpp>
+#include <fsatutils/zmq/zprotocol.hpp>
 #include <vector>
 
 inline std::uint64_t strToU64(const char* str) {

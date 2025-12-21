@@ -4,9 +4,9 @@
 #include <memory>
 #include <read-sensors/sensor.hpp>
 #include <string>
-#include <utils/iio/channel.hpp>
-#include <utils/iio/context.hpp>
-#include <utils/iio/device.hpp>
+#include <fsatutils/iio/channel.hpp>
+#include <fsatutils/iio/context.hpp>
+#include <fsatutils/iio/device.hpp>
 
 namespace sensor {
 

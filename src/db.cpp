@@ -2,7 +2,7 @@
 
 #include <read-sensors/db.hpp>
 #include <string>
-#include <utils/log/log.hpp>
+#include <fsatutils/log/log.hpp>
 
 int SqliteDb::createSqliteDB(void) {
   int32_t rq = sqlite3_open(dbPath_.c_str(), &dbHandle_);

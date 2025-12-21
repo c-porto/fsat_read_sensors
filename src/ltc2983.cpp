@@ -5,7 +5,7 @@
 #include <ranges>
 #include <read-sensors/ltc2983.hpp>
 #include <read-sensors/sensor.hpp>
-#include <utils/log/log.hpp>
+#include <fsatutils/log/log.hpp>
 
 namespace sensor {
 

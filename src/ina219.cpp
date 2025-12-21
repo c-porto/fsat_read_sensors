@@ -5,7 +5,7 @@
 #include <read-sensors/ina219.hpp>
 #include <read-sensors/sensor.hpp>
 #include <stdexcept>
-#include <utils/log/log.hpp>
+#include <fsatutils/log/log.hpp>
 #include <vector>
 
 namespace sensor {

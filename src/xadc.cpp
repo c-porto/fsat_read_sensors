@@ -5,7 +5,7 @@
 #include <ranges>
 #include <read-sensors/sensor.hpp>
 #include <read-sensors/xadc.hpp>
-#include <utils/log/log.hpp>
+#include <fsatutils/log/log.hpp>
 
 namespace sensor {
 

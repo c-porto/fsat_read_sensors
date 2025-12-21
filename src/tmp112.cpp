@@ -7,7 +7,7 @@
 #include <read-sensors/tmp112.hpp>
 #include <stdexcept>
 #include <string>
-#include <utils/log/log.hpp>
+#include <fsatutils/log/log.hpp>
 
 namespace sensor {
 

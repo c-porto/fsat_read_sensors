@@ -17,19 +17,12 @@ rs_inc = include_directories('include')
 
 sqlite3_dep = dependency('sqlite3')
 
-libiio = dependency('libiio')
-
-zmq = dependency('libzmq')
-
-nlohmann_json = dependency('nlohmann_json')
+fsatutils = dependency('fsatutils')
 
 rs_deps += sqlite3_dep
-rs_deps += libiio
-rs_deps += zmq
-rs_deps += nlohmann_json
+rs_deps += fsatutils
 
 subdir('src')
-subdir('utils')
 
 c_args = [
   '-Wno-unused-parameter',

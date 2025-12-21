@@ -6,8 +6,8 @@
 #include <read-sensors/sensor-manager.hpp>
 #include <read-sensors/sensor.hpp>
 #include <thread>
-#include <utils/log/log.hpp>
-#include <utils/zmq/zprotocol.hpp>
+#include <fsatutils/log/log.hpp>
+#include <fsatutils/zmq/zprotocol.hpp>
 #include <vector>
 
 namespace {
