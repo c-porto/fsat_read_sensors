@@ -1,11 +1,12 @@
 #include <iio.h>
 
+#include <cstdint>
+#include <fsatutils/log/log.hpp>
 #include <memory>
 #include <optional>
 #include <ranges>
 #include <read-sensors/sensor.hpp>
 #include <read-sensors/xadc.hpp>
-#include <fsatutils/log/log.hpp>
 
 namespace sensor {
 
@@ -33,10 +34,6 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
       continue;
     }
 
-    double read = static_cast<double>(static_cast<int16_t>(raw) *
-                                      static_cast<double>(scale)) +
-                  static_cast<double>(offset);
-
     if (channel->name() == "temp0") {
       try {
         offset = channel->read_attr<long long>("offset");
@@ -46,8 +43,11 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
         continue;
       }
 
-      read += static_cast<double>(offset);
+      double read = static_cast<double>(static_cast<int16_t>(raw) +
+                                        static_cast<int16_t>(offset)) *
+                    scale;
 
+      /* Convert to Celsius */
       read /= 1000.0;
 
       sensor::SensorDataEntry entry{
@@ -60,6 +60,8 @@ std::optional<std::vector<SensorDataEntry>> xadc::read() {
       readings.push_back(entry);
 
     } else {
+      double read = static_cast<double>(static_cast<int16_t>(raw) *
+                                        static_cast<double>(scale));
       sensor::SensorDataEntry entry{
           .sensorName = name_,
           .sensorType = channel->name(),
