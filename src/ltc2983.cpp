@@ -33,7 +33,7 @@ std::optional<std::vector<SensorDataEntry>> Ltc2983::read() {
       continue;
     }
 
-    double read = static_cast<double>(static_cast<int16_t>(raw) *
+    double read = static_cast<double>(static_cast<int32_t>(raw) *
                                       static_cast<double>(scale));
     /* Convert to Celsius */
     read /= 1000.0;
