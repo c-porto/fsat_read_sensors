@@ -18,7 +18,7 @@ Ina219::Ina219(std::shared_ptr<fsatutils::iio::Context> ctx, std::string name) {
   dev_ = std::make_unique<fsatutils::iio::Device>(ctx, name);
 
   volt_ = std::make_unique<fsatutils::iio::Channel>("voltage1", *dev_, false);
-  curr_ = std::make_unique<fsatutils::iio::Channel>("current1", *dev_, false);
+  curr_ = std::make_unique<fsatutils::iio::Channel>("current3", *dev_, false);
   pwr_ = std::make_unique<fsatutils::iio::Channel>("power2", *dev_, false);
 }
 
