@@ -4,6 +4,10 @@
 #include <iio.h>
 
 #include <cstdint>
+#include <fsatutils/cli/arg_handler.hpp>
+#include <fsatutils/iio/context.hpp>
+#include <fsatutils/log/log.hpp>
+#include <fsatutils/zmq/zprotocol.hpp>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -14,10 +18,6 @@
 #include <read-sensors/tmp112.hpp>
 #include <read-sensors/xadc.hpp>
 #include <string>
-#include <fsatutils/cli/arg_handler.hpp>
-#include <fsatutils/iio/context.hpp>
-#include <fsatutils/log/log.hpp>
-#include <fsatutils/zmq/zprotocol.hpp>
 #include <vector>
 
 inline std::uint64_t strToU64(const char* str) {
@@ -52,8 +52,8 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
             try {
               return std::make_shared<sensor::Ina219>(ctx_, sensorName);
             } catch (std::runtime_error const& e) {
-              logs::log(ERR, "Failed to create sensor [%s] of type [%s]\n",
-                        sensorName.c_str(), sensorType.c_str());
+              logs::log(ERR, "Failed to create sensor [%s] of type [%s]| %s\n",
+                        sensorName.c_str(), sensorType.c_str(), e.what());
               return nullptr;
             }
           });
@@ -65,8 +65,8 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
             try {
               return std::make_shared<sensor::Tmp112>(ctx_, sensorName);
             } catch (std::runtime_error const& e) {
-              logs::log(ERR, "Failed to create sensor [%s] of type [%s]\n",
-                        sensorName.c_str(), sensorType.c_str());
+              logs::log(ERR, "Failed to create sensor [%s] of type [%s]| %s\n",
+                        sensorName.c_str(), sensorType.c_str(), e.what());
               return nullptr;
             }
           });
@@ -78,8 +78,8 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
             try {
               return std::make_shared<sensor::Ltc2983>(ctx_, sensorName);
             } catch (std::runtime_error const& e) {
-              logs::log(ERR, "Failed to create sensor [%s] of type [%s]\n",
-                        sensorName.c_str(), sensorType.c_str());
+              logs::log(ERR, "Failed to create sensor [%s] of type [%s]| %s\n",
+                        sensorName.c_str(), sensorType.c_str(), e.what());
               return nullptr;
             }
           });
@@ -91,8 +91,8 @@ class SensorManager : fsatutils::ArgpModule<SensorManager> {
             try {
               return std::make_shared<sensor::xadc>(ctx_, sensorName);
             } catch (std::runtime_error const& e) {
-              logs::log(ERR, "Failed to create sensor [%s] of type [%s]\n",
-                        sensorName.c_str(), sensorType.c_str());
+              logs::log(ERR, "Failed to create sensor [%s] of type [%s]| %s\n",
+                        sensorName.c_str(), sensorType.c_str(), e.what());
               return nullptr;
             }
           });
