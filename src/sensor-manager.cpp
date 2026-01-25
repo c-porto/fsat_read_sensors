@@ -252,6 +252,17 @@ SensorManager::SensorManager(ManagerCLI& cli) : db_{cli.dbPath} {
   startTracking("xadc", "voltage5");
   startTracking("xadc", "voltage6");
   startTracking("xadc", "voltage7");
+  startTracking("h1-45_46", "ina219");
+  startTracking("h1-49_50", "ina219");
+  startTracking("h1-47_48", "ina219");
+  startTracking("h1-51_52", "ina219");
+  startTracking("h2-35_36", "ina219");
+  startTracking("h2-25_26", "ina219");
+  startTracking("h2-27_28", "ina219");
+  startTracking("ambient-temp", "tmp112");
+  startTracking("ltc2983", "temp0");
+  startTracking("ltc2983", "temp1");
+  startTracking("ltc2983", "temp2");
 }
 
 void SensorManager::runManager(void) {
