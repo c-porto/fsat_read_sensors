@@ -39,3 +39,21 @@
 *.sh
 
 compile_commands.json
+
+# Grafana stuff
+grafana/*
+!grafana/
+!grafana/provisioning/
+!grafana/provisioning/*
+!grafana/provisioning/datasources/
+!grafana/provisioning/dashboards/
+!grafana/provisioning/datasources/*.yaml
+!grafana/provisioning/dashboards/*.yaml
+!grafana/dashboards/
+!grafana/dashboards/*.json
+grafana/provisioning/data/
+grafana/data/
+
+# Local Runs stuff
+db/
+log/

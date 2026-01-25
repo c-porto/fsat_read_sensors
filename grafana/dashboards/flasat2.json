@@ -1,0 +1,460 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "P4BAA767DB9B32697"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 1,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "queryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorType = 'temp0' THEN value ELSE NULL END) as \"cold-junction\",\n  MAX(CASE WHEN sensorType = 'temp1' THEN value ELSE NULL END) as \"thermocouple-1\",\n  MAX(CASE WHEN sensorType = 'temp2' THEN value ELSE NULL END) as \"thermocouple-2\"\nFROM sensor_measurements\nWHERE \n  sensorName = 'ltc2983'\nGROUP BY time\nORDER BY time",
+          "queryType": "table",
+          "rawQueryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorType = 'temp0' THEN value ELSE NULL END) as \"cold-junction\",\n  MAX(CASE WHEN sensorType = 'temp1' THEN value ELSE NULL END) as \"thermocouple-1\",\n  MAX(CASE WHEN sensorType = 'temp2' THEN value ELSE NULL END) as \"thermocouple-2\"\nFROM sensor_measurements\nWHERE \n  sensorName = 'ltc2983'\nGROUP BY time\nORDER BY time",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "LTC2983 Temperature Readings",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "P4BAA767DB9B32697"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 6,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "mwatt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "queryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'power'\nGROUP BY time\nORDER BY time",
+          "queryType": "table",
+          "rawQueryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'power'\nGROUP BY time\nORDER BY time",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Power Readings",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "P4BAA767DB9B32697"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 9,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "mamp"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "queryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'current'\nGROUP BY time\nORDER BY time",
+          "queryType": "table",
+          "rawQueryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'current'\nGROUP BY time\nORDER BY time",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Current Readings",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "P4BAA767DB9B32697"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "semi-dark-blue",
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 6,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "mvolt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "P4BAA767DB9B32697"
+          },
+          "queryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'voltage'\nGROUP BY time\nORDER BY time",
+          "queryType": "table",
+          "rawQueryText": "SELECT\n  strftime('%Y-%m-%dT%H:%M:%fZ', timestamp) as time,\n  MAX(CASE WHEN sensorName = 'h1-45_46' THEN value ELSE NULL END) as \"h1-45_46\",\n  MAX(CASE WHEN sensorName = 'h1-49_50' THEN value ELSE NULL END) as \"h1-49_50\",\n  MAX(CASE WHEN sensorName = 'h1-47_48' THEN value ELSE NULL END) as \"h1-47_48\",\n  MAX(CASE WHEN sensorName = 'h1-51_52' THEN value ELSE NULL END) as \"h1-51_52\",\n  MAX(CASE WHEN sensorName = 'h2-35_36' THEN value ELSE NULL END) as \"h2-35_36\",\n  MAX(CASE WHEN sensorName = 'h2-25_26' THEN value ELSE NULL END) as \"h2-25_26\",\n  MAX(CASE WHEN sensorName = 'h2-27_28' THEN value ELSE NULL END) as \"h2-27_28\"\nFROM sensor_measurements\nWHERE \n  measurementType = 'voltage'\nGROUP BY time\nORDER BY time",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Voltage Readings",
+      "transparent": true,
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "2026-01-15T23:59:52.308Z",
+    "to": "2026-01-16T03:29:19.586Z"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "FlatSat2 Read Sensors",
+  "uid": "0856bf41-6a45-4213-9eb4-3676a53ffdd9",
+  "version": 1
+}

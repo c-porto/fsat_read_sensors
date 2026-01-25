@@ -1,0 +1,18 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    user: "${HOST_UID}:${HOST_GID}"
+    dns:
+      - 8.8.8.8
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_PLUGINS_PREINSTALL=frser-sqlite-datasource
+    volumes:
+      - ${DB_VOLUME_PATH:-./db/}:/var/lib/grafana/data
+      - ${GRAFANA_MAIN_VOLUME:-./grafana}:/var/lib/grafana
+      - ${GRAFANA_DS_VOLUME:-./grafana/provisioning/datasources}:/etc/grafana/provisioning/datasources 
+      - ${GRAFANA_PROV_DASH_VOLUME:-./grafana/provisioning/dashboards}:/etc/grafana/provisioning/dashboards
+      - ${GRAFANA_DASH_VOLUME:-./grafana/dashboards}:/var/lib/grafana/dashboards
