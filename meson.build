@@ -37,19 +37,15 @@ c_args = [
 
 py = find_program('python3')
 
-version_header_path = meson.current_build_dir() / 'version.hpp'
-
-version_hpp = custom_target(
-  'version_hpp',
+version_hpp = vcs_tag(
+  input: 'scripts/version.hpp.in',
   output: 'version.hpp',
-  input: 'scripts/gen_versioning.py',
   command: [
     py,
-    '@INPUT@',
-    version_header_path,
+    meson.project_source_root() / 'scripts/gen_versioning.py',
     meson.project_version(),
   ],
-  build_by_default: true,
+  fallback: meson.project_version(),
 )
 
 read_sensors = executable(
