@@ -5,7 +5,7 @@
 #include <memory>
 #include <read-sensors/sensor-manager.hpp>
 
-#define DB_PATH "/var/local/read-sensors.sqlite3"
+#define DB_PATH "/experiment/read-sensors.sqlite3"
 
 #include "version.hpp"
 
