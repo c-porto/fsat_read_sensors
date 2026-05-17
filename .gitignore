@@ -57,3 +57,5 @@ grafana/data/
 # Local Runs stuff
 db/
 log/
+*.sqlite3
+*.db
