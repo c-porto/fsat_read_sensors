@@ -21,7 +21,7 @@ int SqliteDb::createSqliteDB(void) {
 
 int SqliteDb::createMeasurementsTable(void) {
   const char* createTableSQL = R"(
-        CREATE TABLE IF NOT EXISTS sensor_measurements (
+        CREATE TABLE IF NOT EXISTS measurements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sensorName TEXT NOT NULL,
             sensorType TEXT NOT NULL,
@@ -30,7 +30,7 @@ int SqliteDb::createMeasurementsTable(void) {
             timestamp TEXT DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_meas_sensor_time
-            ON sensor_measurements(sensorName, timestamp);
+            ON measurements(sensorName, timestamp);
     )";
 
   char* errMsg = nullptr;
@@ -71,7 +71,7 @@ int SqliteDb::prepareInsertMeasurementStmt(void) {
   if (!dbOpen_) return -1;
 
   const char* insertStmt =
-      "INSERT INTO sensor_measurements (sensorName, sensorType, "
+      "INSERT INTO measurements (sensorName, sensorType, "
       "measurementType, value) VALUES (?, ?, ?, ?);";
 
   if (sqlite3_prepare_v2(dbHandle_, insertStmt, -1, &insertMeasurementStmt_,
@@ -134,7 +134,7 @@ int SqliteDb::addMeasurementToDB(sensor::SensorDataEntry const& sensor) {
 
 int SqliteDb::createRegisteredSensorsTable(void) {
   const char* sql = R"(
-        CREATE TABLE IF NOT EXISTS registered_sensors (
+        CREATE TABLE IF NOT EXISTS registered (
             sensorName TEXT PRIMARY KEY,
             sensorType TEXT NOT NULL,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP
@@ -145,20 +145,20 @@ int SqliteDb::createRegisteredSensorsTable(void) {
   int32_t result = sqlite3_exec(dbHandle_, sql, nullptr, nullptr, &errMsg);
 
   if (result != SQLITE_OK) {
-    logs::log(ERR, "Failed to create registered_sensors table!! Error: %s\n",
+    logs::log(ERR, "Failed to create registered table!! Error: %s\n",
               errMsg ? errMsg : "");
     sqlite3_free(errMsg);
     return -1;
   }
 
   logs::log(INFO,
-            "registered_sensors table was created (if it didn't exist)!\n");
+            "registered table was created (if it didn't exist)!\n");
   return 0;
 }
 
 int SqliteDb::createTrackedSensorsTable(void) {
   const char* sql = R"(
-        CREATE TABLE IF NOT EXISTS tracked_sensors (
+        CREATE TABLE IF NOT EXISTS tracked (
             sensorName TEXT NOT NULL,
             channel TEXT NOT NULL,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -170,13 +170,13 @@ int SqliteDb::createTrackedSensorsTable(void) {
   int32_t result = sqlite3_exec(dbHandle_, sql, nullptr, nullptr, &errMsg);
 
   if (result != SQLITE_OK) {
-    logs::log(ERR, "Failed to create tracked_sensors table!! Error: %s\n",
+    logs::log(ERR, "Failed to create tracked table!! Error: %s\n",
               errMsg ? errMsg : "");
     sqlite3_free(errMsg);
     return -1;
   }
 
-  logs::log(INFO, "tracked_sensors table was created (if it didn't exist)!\n");
+  logs::log(INFO, "tracked table was created (if it didn't exist)!\n");
   return 0;
 }
 
@@ -185,7 +185,7 @@ int SqliteDb::addRegisteredSensor(std::string const& name,
   if (!dbOpen_) return -1;
 
   const char* stmtStr =
-      "INSERT OR REPLACE INTO registered_sensors (sensorName, sensorType) "
+      "INSERT OR REPLACE INTO registered (sensorName, sensorType) "
       "VALUES (?, ?);";
 
   sqlite3_stmt* stmt = nullptr;
@@ -213,7 +213,7 @@ int SqliteDb::addRegisteredSensor(std::string const& name,
 int SqliteDb::removeRegisteredSensor(std::string const& name) {
   if (!dbOpen_) return -1;
 
-  const char* stmtStr = "DELETE FROM registered_sensors WHERE sensorName = ?;";
+  const char* stmtStr = "DELETE FROM registered WHERE sensorName = ?;";
 
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(dbHandle_, stmtStr, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -235,7 +235,7 @@ SqliteDb::getRegisteredSensors() {
   if (!dbOpen_) return out;
 
   const char* stmtStr =
-      "SELECT sensorName, sensorType FROM registered_sensors;";
+      "SELECT sensorName, sensorType FROM registered;";
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(dbHandle_, stmtStr, -1, &stmt, nullptr) != SQLITE_OK) {
     logs::log(ERR, "Failed to prepare getRegisteredSensors: %s\n",
@@ -257,7 +257,7 @@ int SqliteDb::addTrackedSensor(std::string const& name,
   if (!dbOpen_) return -1;
 
   const char* stmtStr =
-      "INSERT OR IGNORE INTO tracked_sensors (sensorName, channel) "
+      "INSERT OR IGNORE INTO tracked (sensorName, channel) "
       "VALUES (?, ?);";
 
   sqlite3_stmt* stmt = nullptr;
@@ -281,7 +281,7 @@ int SqliteDb::removeTrackedSensor(std::string const& name,
   if (!dbOpen_) return -1;
 
   const char* stmtStr =
-      "DELETE FROM tracked_sensors WHERE sensorName = ? AND channel = ?;";
+      "DELETE FROM tracked WHERE sensorName = ? AND channel = ?;";
 
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(dbHandle_, stmtStr, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -302,7 +302,7 @@ int SqliteDb::removeTrackedSensor(std::string const& name,
 int SqliteDb::removeTrackedSensorAll(std::string const& name) {
   if (!dbOpen_) return -1;
 
-  const char* stmtStr = "DELETE FROM tracked_sensors WHERE sensorName = ?;";
+  const char* stmtStr = "DELETE FROM tracked WHERE sensorName = ?;";
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(dbHandle_, stmtStr, -1, &stmt, nullptr) != SQLITE_OK) {
     logs::log(ERR, "Failed to prepare removeTrackedSensorAll: %s\n",
@@ -321,7 +321,7 @@ std::vector<std::pair<std::string, std::string>> SqliteDb::getTrackedSensors() {
   std::vector<std::pair<std::string, std::string>> out;
   if (!dbOpen_) return out;
 
-  const char* stmtStr = "SELECT sensorName, channel FROM tracked_sensors;";
+  const char* stmtStr = "SELECT sensorName, channel FROM tracked;";
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(dbHandle_, stmtStr, -1, &stmt, nullptr) != SQLITE_OK) {
     logs::log(ERR, "Failed to prepare getTrackedSensors: %s\n",
