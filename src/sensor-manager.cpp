@@ -208,6 +208,8 @@ void SensorManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
 
 void SensorManager::readTrackedSensors(void) {
   std::lock_guard<std::mutex> lock{this->lock_};
+
+  db_.begin();
   for (const auto& sensor : tracking_sensors_) {
     std::optional<std::vector<sensor::SensorDataEntry>> readings =
         sensor->read();
@@ -219,6 +221,7 @@ void SensorManager::readTrackedSensors(void) {
       }
     }
   }
+  db_.commit();
 }
 
 SensorManager::SensorManager(ManagerCLI& cli) : db_{cli.dbPath} {
@@ -229,6 +232,25 @@ SensorManager::SensorManager(ManagerCLI& cli) : db_{cli.dbPath} {
   }
 
   factory_ = std::make_unique<SensorFactory>(ctx_);
+
+  auto persistedRegistered = db_.getRegisteredSensors();
+  auto persistedTracked = db_.getTrackedSensors();
+
+  if (!persistedRegistered.empty() || !persistedTracked.empty()) {
+    logs::log(INFO,
+              "Restoring sensor state from DB: %zu registered, %zu tracked\n",
+              persistedRegistered.size(), persistedTracked.size());
+
+    for (const auto& [name, type] : persistedRegistered) {
+      registerDevice(name, type);
+    }
+    for (const auto& [name, channel] : persistedTracked) {
+      startTracking(name, channel);
+    }
+    return;
+  }
+
+  logs::log(INFO, "No persisted sensor state found; seeding defaults\n");
 
   /* Register FlatSat2 Devices */
   registerDevice("xadc", "xadc");
@@ -314,6 +336,7 @@ int SensorManager::startTracking(std::string const& sensorName,
     if ((*tracked)->isChannelBased()) {
       std::lock_guard<std::mutex> lock{this->lock_};
       err = (*tracked)->addChannel(channel);
+      if (err == 0) db_.addTrackedSensor(sensorName, channel);
     }
   } else {
     logs::log(INFO, "Now tracking [%s] sensor\n", sensorName.c_str());
@@ -325,6 +348,8 @@ int SensorManager::startTracking(std::string const& sensorName,
     if ((*it)->isChannelBased()) {
       err = (*it)->addChannel(channel);
     }
+
+    if (err == 0) db_.addTrackedSensor(sensorName, channel);
   }
 
   return err;
@@ -354,11 +379,13 @@ int SensorManager::stopTracking(std::string const& sensorName,
     }
 
     sensor->removeChannel(channel);
+    db_.removeTrackedSensor(sensorName, channel);
 
     logs::log(INFO, "Sensor [%s] now have [%d] channels registered!\n",
               sensor->getName().c_str(), sensor->activeChannels());
   } else {
     tracking_sensors_.erase(it);
+    db_.removeTrackedSensorAll(sensorName);
   }
 
   return 0;
@@ -406,6 +433,8 @@ int SensorManager::registerDevice(std::string const& sensorName,
 
   registered_sensors_.push_back(sensor);
 
+  db_.addRegisteredSensor(sensorName, sensorType);
+
   logs::log(INFO, "Sensor [%s] was added to Registered list!\n",
             sensorName.c_str());
 
@@ -437,6 +466,9 @@ int SensorManager::unregisterDevice(std::string& sensorName) {
     logs::log(INFO, "Sensor [%s] was removed from Registered list!\n",
               sensorName.c_str());
   }
+
+  db_.removeRegisteredSensor(sensorName);
+  db_.removeTrackedSensorAll(sensorName);
 
   return 0;
 }
